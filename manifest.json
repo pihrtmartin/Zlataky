@@ -1,19 +1,14 @@
 {
-  "name": "Moje Aplikace",
-  "short_name": "Aplikace",
+  "name": "Zlaťáky Rodina",
+  "short_name": "Zlaťáky",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "background_color": "#f1f5f9",
+  "theme_color": "#f59e0b",
   "icons": [
     {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x192",
+      "src": "./zlataky.png",
+      "sizes": "512x512",
       "type": "image/png"
     }
   ]
