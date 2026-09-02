@@ -385,11 +385,13 @@
                 const dayOfYear = Math.floor(diff / oneDay);
                 const isEvenDay = dayOfYear % 2 === 0;
 
-                const alternatingAssignee = isEvenDay ? 'elik' : 'tofik';
-                const alternatingTaskTitle = isEvenDay ? 'Charlie - záchod, jídlo' : 'Vysát - koupelna, chodba, záchod';
+                // Střídané úkoly: Sudý den Elík Charlie, Tofík vysávání. Lichý den obráceně.
+                const elikTaskTitle = isEvenDay ? 'Charlie - záchod, jídlo' : 'Vysát - koupelna, chodba, záchod';
+                const tofikTaskTitle = isEvenDay ? 'Vysát - koupelna, chodba, záchod' : 'Charlie - záchod, jídlo';
 
                 const newDailyTasks = [
-                    { id: Date.now() + Math.random(), title: alternatingTaskTitle, category: 'Péče', reward: 2, assignedTo: alternatingAssignee, status: 'open', date: targetDateStr },
+                    { id: Date.now() + Math.random(), title: elikTaskTitle, category: 'Péče', reward: 2, assignedTo: 'elik', status: 'open', date: targetDateStr },
+                    { id: Date.now() + Math.random(), title: tofikTaskTitle, category: 'Péče', reward: 2, assignedTo: 'tofik', status: 'open', date: targetDateStr },
                     
                     { id: Date.now() + Math.random(), title: 'Ustlat postel', category: 'Úklid', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
                     { id: Date.now() + Math.random(), title: 'Uklidit pokoj', category: 'Úklid', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
@@ -1309,13 +1311,24 @@
             const user = state.users.find(u => u.id === userId);
             document.getElementById('modal-target-username').innerText = user ? user.name : '';
             
-            // Naplnění roletky existujícími jedinečnými šablonami úkolů (z aktuálního dne nebo historie)
             const selectEl = document.getElementById('task-template-select');
             selectEl.innerHTML = `<option value="">-- Vyber existující úkol ze seznamu --</option>`;
             
+            // Pevně předdefinované šablony + dynamicky sesbírané z aktuálních úkolů
+            const defaultTemplates = [
+                { title: 'Charlie - záchod, jídlo', category: 'Péče', reward: 2 },
+                { title: 'Vysát - koupelna, chodba, záchod', category: 'Péče', reward: 2 },
+                { title: 'Ustlat postel', category: 'Úklid', reward: 1 },
+                { title: 'Uklidit pokoj', category: 'Úklid', reward: 1 },
+                { title: 'Připravit do školy', category: 'Škola', reward: 1 },
+                { title: 'Úkoly do školy', category: 'Škola', reward: 1 },
+                { title: 'Svačina do školy', category: 'Škola', reward: 1 }
+            ];
+
             const uniqueTemplates = {};
+            defaultTemplates.forEach(t => { uniqueTemplates[t.title] = t; });
             state.tasks.forEach(t => {
-                if (!uniqueTemplates[t.title]) {
+                if (!uniqueTemplates[t.title] && t.assignedTo !== 'volunteer') {
                     uniqueTemplates[t.title] = { title: t.title, category: t.category, reward: t.reward };
                 }
             });
@@ -1324,7 +1337,6 @@
                 selectEl.innerHTML += `<option value="${idx}" data-title="${escapeHtml(tmpl.title)}" data-category="${escapeHtml(tmpl.category)}" data-reward="${tmpl.reward}">${tmpl.title} (${tmpl.category} - ${tmpl.reward} 🪙)</option>`;
             });
 
-            // Vymazání polí pro vlastní úkol
             document.getElementById('custom-task-title').value = '';
             document.getElementById('custom-task-reward').value = '1';
 
