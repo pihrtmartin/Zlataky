@@ -99,12 +99,12 @@
             <!-- Kontejner pro karty členů -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="cards-container"></div>
 
-            <!-- Dobrovolné úkoly (opakovatelné) -->
+            <!-- Dobrovolné úkoly (opakovatelné, nikdy nezmizí) -->
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
                 <h3 class="font-bold text-slate-700 mb-1 flex items-center gap-2">
                     <i class="fa-solid fa-hand-holding-heart text-emerald-500"></i> Dobrovolné úkoly k rozebrání
                 </h3>
-                <p class="text-xs text-slate-400 mb-4">Tyto úkoly po splnění nezmizí – můžeš si je vzít kdykoliv znovu.</p>
+                <p class="text-xs text-slate-400 mb-4">Tyto úkoly po splnění nezmizí – můžeš si je vzít kdykoliv znovu (klidně víckrát denně).</p>
                 <div class="space-y-3" id="volunteer-tasks-container"></div>
             </div>
         </section>
@@ -194,7 +194,7 @@
         <section id="tab-stats" class="space-y-6 hidden">
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
                 <h2 class="text-lg font-bold text-slate-700 mb-2"><i class="fa-solid fa-trophy mr-2 text-yellow-500"></i>Žebříček zlaťáků</h2>
-                <p class="text-xs text-slate-400 mb-4">Kliknutím na uživatele v žebříčku rozbalíš detailní historii jeho získaných odměn.</p>
+                <p class="text-xs text-slate-400 mb-4">Kliknutím na uživatele v žebříčku rozbalíš detailní historii jeho získaných odměn. Zlaťáky lze také upravit kliknutím na tlačítko úpravy u jména.</p>
                 <div class="space-y-3" id="leaderboard-container"></div>
             </div>
         </section>
@@ -242,6 +242,24 @@
         </div>
     </div>
 
+    <!-- Modální okno pro ruční úpravu zlaťáků -->
+    <div id="manual-coins-modal" class="fixed inset-0 bg-slate-900/50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-xl text-center">
+            <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl mx-auto flex items-center justify-center text-xl font-bold">
+                <i class="fa-solid fa-coins"></i>
+            </div>
+            <h3 class="font-bold text-lg text-slate-800">Ruční úprava zlaťáků</h3>
+            <p id="manual-coins-username" class="text-xs text-slate-500"></p>
+            <div>
+                <input type="number" id="manual-coins-input" class="w-32 text-center text-xl font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500">
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="confirmManualCoins()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2.5 rounded-xl transition">Uložit</button>
+                <button onclick="closeManualCoinsModal()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs py-2.5 rounded-xl transition">Zrušit</button>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScriptová logika -->
     <script>
         let todayStr = new Date().toISOString().split('T')[0];
@@ -255,6 +273,7 @@
             cardViewMode: 'kids',
             activeReassignTaskId: null,
             expandedLeaderboardUser: null,
+            manualCoinsUserId: null,
             users: [
                 { id: 'tatka', name: 'Taťka', icon: 'fa-solid fa-user-tie', coins: 0, pin: '1234', isParent: true },
                 { id: 'mamka', name: 'Mamka', icon: 'fa-solid fa-user', coins: 0, pin: '1234', isParent: true },
@@ -265,41 +284,64 @@
             tasks: []
         };
 
-        // Pomocná funkce pro automatické vygenerování úkolů na dnešní den (se střídáním obden)
+        // Pomocná funkce pro automatické vygenerování úkolů na dnešní den (se střídáním obden) + pevné dobrovolné úkoly
         function ensureDailyTasksExist(targetDateStr) {
             const existingForDate = state.tasks.filter(t => t.date === targetDateStr && t.assignedTo !== 'volunteer');
-            if (existingForDate.length > 0) return;
+            if (existingForDate.length === 0) {
+                const dObj = new Date(targetDateStr);
+                const startOfYear = new Date(dObj.getFullYear(), 0, 0);
+                const diff = dObj - startOfYear;
+                const oneDay = 1000 * 60 * 60 * 24;
+                const dayOfYear = Math.floor(diff / oneDay);
+                const isEvenDay = dayOfYear % 2 === 0;
 
-            const dObj = new Date(targetDateStr);
-            const startOfYear = new Date(dObj.getFullYear(), 0, 0);
-            const diff = dObj - startOfYear;
-            const oneDay = 1000 * 60 * 60 * 24;
-            const dayOfYear = Math.floor(diff / oneDay);
-            const isEvenDay = dayOfYear % 2 === 0;
+                const alternatingAssignee = isEvenDay ? 'elik' : 'tofik';
+                const alternatingTaskTitle = isEvenDay ? 'Charlie - záchod, jídlo' : 'Vysát - koupelna, chodba, záchod';
 
-            const alternatingAssignee = isEvenDay ? 'elik' : 'tofik';
-            const alternatingTaskTitle = isEvenDay ? 'Charlie - záchod, jídlo' : 'Vysát - koupelna, chodba, záchod';
+                const newDailyTasks = [
+                    { id: Date.now() + Math.random(), title: alternatingTaskTitle, category: 'Péče', reward: 2, assignedTo: alternatingAssignee, status: 'open', date: targetDateStr },
+                    
+                    { id: Date.now() + Math.random(), title: 'Ustlat postel', category: 'Úklid', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
+                    { id: Date.now() + Math.random(), title: 'Uklidit pokoj', category: 'Úklid', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
+                    { id: Date.now() + Math.random(), title: 'Připravit do školy', category: 'Škola', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
+                    { id: Date.now() + Math.random(), title: 'Úkoly do školy', category: 'Škola', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
+                    { id: Date.now() + Math.random(), title: 'Svačina do školy', category: 'Škola', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
 
-            const newDailyTasks = [
-                { id: Date.now() + Math.random(), title: alternatingTaskTitle, category: 'Péče', reward: 2, assignedTo: alternatingAssignee, status: 'open', date: targetDateStr },
-                
-                { id: Date.now() + Math.random(), title: 'Ustlat postel', category: 'Úklid', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
-                { id: Date.now() + Math.random(), title: 'Uklidit pokoj', category: 'Úklid', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
-                { id: Date.now() + Math.random(), title: 'Připravit do školy', category: 'Škola', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
-                { id: Date.now() + Math.random(), title: 'Úkoly do školy', category: 'Škola', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
-                { id: Date.now() + Math.random(), title: 'Svačina do školy', category: 'Škola', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
+                    { id: Date.now() + Math.random(), title: 'Ustlat postel', category: 'Úklid', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
+                    { id: Date.now() + Math.random(), title: 'Uklidit pokoj', category: 'Úklid', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
+                    { id: Date.now() + Math.random(), title: 'Připravit do školy', category: 'Škola', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
+                    { id: Date.now() + Math.random(), title: 'Úkoly do školy', category: 'Škola', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
+                    { id: Date.now() + Math.random(), title: 'Svačina do školy', category: 'Škola', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr }
+                ];
+                state.tasks.push(...newDailyTasks);
+            }
 
-                { id: Date.now() + Math.random(), title: 'Ustlat postel', category: 'Úklid', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
-                { id: Date.now() + Math.random(), title: 'Uklidit pokoj', category: 'Úklid', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
-                { id: Date.now() + Math.random(), title: 'Připravit do školy', category: 'Škola', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
-                { id: Date.now() + Math.random(), title: 'Úkoly do školy', category: 'Škola', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
-                { id: Date.now() + Math.random(), title: 'Svačina do školy', category: 'Škola', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
-
-                { id: Date.now() + Math.random(), title: 'Vyklidit myčku', category: 'Domácnost', reward: 2, allowHalf: true, assignedTo: 'volunteer', status: 'volunteer', date: targetDateStr },
-                { id: Date.now() + Math.random(), title: 'Vysát celý byt', category: 'Úklid', reward: 4, allowHalf: true, assignedTo: 'volunteer', status: 'volunteer', date: targetDateStr }
+            // Zajištění dobrovolných úkolů (šablony)
+            const existingVol = state.tasks.filter(t => t.date === targetDateStr && t.assignedTo === 'volunteer');
+            const volTemplates = [
+                { title: 'Vyklidit myčku', reward: 2, allowHalf: true, category: 'Domácnost' },
+                { title: 'Vysát celý byt', reward: 4, allowHalf: true, category: 'Úklid' },
+                { title: 'Vysát obývák', reward: 1, allowHalf: false, category: 'Úklid' },
+                { title: 'Vysát kuchyň', reward: 1, allowHalf: false, category: 'Úklid' },
+                { title: 'Vysát chodbu', reward: 1, allowHalf: false, category: 'Úklid' },
+                { title: 'Vysát pokoj', reward: 1, allowHalf: false, category: 'Úklid' }
             ];
 
-            state.tasks.push(...newDailyTasks);
+            volTemplates.forEach(tmpl => {
+                const found = existingVol.find(v => v.title === tmpl.title);
+                if (!found) {
+                    state.tasks.push({
+                        id: Date.now() + Math.random(),
+                        title: tmpl.title,
+                        category: tmpl.category,
+                        reward: tmpl.reward,
+                        allowHalf: tmpl.allowHalf,
+                        assignedTo: 'volunteer',
+                        status: 'volunteer',
+                        date: targetDateStr
+                    });
+                }
+            });
         }
 
         // Synchronizace s Firebase Realtime Database
@@ -550,8 +592,8 @@
                                         <p class="text-xs text-slate-400">Úkoly na tento den</p>
                                     </div>
                                 </div>
-                                <div class="bg-amber-50 border border-amber-200 px-3 py-1 rounded-full flex items-center gap-1.5 text-amber-800 font-bold text-xs">
-                                    <i class="fa-solid fa-coins text-amber-500"></i> ${user.coins}
+                                <div class="bg-amber-50 border border-amber-200 px-3 py-1 rounded-full flex items-center gap-1.5 text-amber-800 font-bold text-xs cursor-pointer hover:bg-amber-100 transition" ${isParent ? `onclick="openManualCoinsModal('${user.id}')" title="Upravit zlaťáky ručně"` : ''}>
+                                    <i class="fa-solid fa-coins text-amber-500"></i> ${user.coins} ${isParent ? '<i class="fa-solid fa-pen text-[10px] ml-1 text-amber-600"></i>' : ''}
                                 </div>
                             </div>
                             <div class="space-y-2.5">
@@ -571,10 +613,14 @@
                             actionButtons += `<button onclick="markAsPending(${task.id})" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1.5 rounded-lg transition font-medium">Potvrdit</button>`;
                         }
                         if (task.status === 'done' && isParent) {
-                            actionButtons += `<button onclick="revertTask(${task.id})" title="Vrátit k opravě (odečíst zlaťáky)" class="bg-red-100 hover:bg-red-200 text-red-700 text-xs px-2.5 py-1.5 rounded-lg transition font-medium flex items-center gap-1"><i class="fa-solid fa-rotate-left"></i> Vrátit</button>`;
+                            actionButtons += `<button onclick="revertTask(${task.id})" title="Vrátit k opravě / stornovat" class="bg-red-100 hover:bg-red-200 text-red-700 text-xs px-2.5 py-1.5 rounded-lg transition font-medium flex items-center gap-1"><i class="fa-solid fa-rotate-left"></i> Vrátit zpět</button>`;
                         }
-                        if (isParent) {
+                        if (isParent && task.status !== 'done') {
                             actionButtons += `<button onclick="openReassignModal(${task.id})" title="Zastoupit" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs p-1.5 rounded-lg transition"><i class="fa-solid fa-right-left"></i></button>`;
+                        }
+                        // Tlačítko pro smazání vzetého dobrovolného úkolu / náhradního úkolu, pokud si to uživatel rozmyslel (pokud je ve stavu open nebo pending a uživatel je vlastníkem karty nebo rodič)
+                        if ((task.status === 'open' || task.status === 'pending') && (state.currentRole === user.id || isParent)) {
+                            actionButtons += `<button onclick="deleteUserTask(${task.id})" title="Zrušit a odstranit ze seznamu" class="bg-slate-100 hover:bg-red-100 text-slate-400 hover:text-red-600 text-xs p-1.5 rounded-lg transition"><i class="fa-solid fa-trash-can"></i></button>`;
                         }
 
                         html += `
@@ -598,9 +644,13 @@
 
             const volContainer = document.getElementById('volunteer-tasks-container');
             volContainer.innerHTML = '';
-            const volTasks = state.tasks.filter(t => t.assignedTo === 'volunteer');
+            const seenVolTitles = new Set();
+            const volTasks = state.tasks.filter(t => t.assignedTo === 'volunteer' && t.date === state.selectedDate);
             
             volTasks.forEach(task => {
+                if (seenVolTitles.has(task.title)) return;
+                seenVolTitles.add(task.title);
+
                 let halfBtn = task.allowHalf ? `<button onclick="takeVolunteerTask(${task.id}, 'half')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded-lg transition font-medium">Polovina (+${task.reward / 2})</button>` : '';
                 volContainer.innerHTML += `
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3.5 bg-emerald-50/50 rounded-xl border border-emerald-100 gap-3">
@@ -657,9 +707,13 @@
                         detailsHtml += `<p class="text-xs text-slate-400 italic">Zatím žádné zlaťáky.</p>`;
                     } else {
                         userTransactions.forEach(tr => {
+                            let dateFormatted = tr.timestamp ? tr.timestamp.split('T')[0] : '';
                             detailsHtml += `
                                 <div class="flex justify-between items-center text-xs bg-white p-2 rounded-lg border border-slate-200">
-                                    <span class="text-slate-700 font-medium">${tr.taskTitle}</span>
+                                    <div>
+                                        <span class="text-slate-700 font-medium">${tr.taskTitle}</span>
+                                        <span class="text-[10px] text-slate-400 ml-1">(${dateFormatted})</span>
+                                    </div>
                                     <span class="font-bold ${tr.reward >= 0 ? 'text-amber-600' : 'text-red-600'}">${tr.reward >= 0 ? '+' : ''}${tr.reward} 🪙</span>
                                 </div>
                             `;
@@ -667,6 +721,8 @@
                     }
                     detailsHtml += `</div>`;
                 }
+
+                let editCoinsBtn = isParent ? `<button onclick="event.stopPropagation(); openManualCoinsModal('${u.id}')" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 font-semibold px-2 py-1 rounded-lg ml-2 transition" title="Upravit zlaťáky"><i class="fa-solid fa-pen"></i></button>` : '';
 
                 lbContainer.innerHTML += `
                     <div class="bg-slate-50 rounded-xl border border-slate-100 p-3.5 cursor-pointer hover:bg-slate-100 transition" onclick="toggleLeaderboardUser('${u.id}')">
@@ -676,8 +732,11 @@
                                 <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold"><i class="${u.icon}"></i></div>
                                 <span class="font-bold text-slate-700">${u.name} <i class="fa-solid fa-chevron-down text-xs ml-1 text-slate-400"></i></span>
                             </div>
-                            <div class="font-extrabold text-amber-600 text-base flex items-center gap-1">
-                                ${u.coins} <i class="fa-solid fa-coins text-xs"></i>
+                            <div class="flex items-center gap-2">
+                                <div class="font-extrabold text-amber-600 text-base flex items-center gap-1">
+                                    ${u.coins} <i class="fa-solid fa-coins text-xs"></i>
+                                </div>
+                                ${editCoinsBtn}
                             </div>
                         </div>
                         ${detailsHtml}
@@ -692,6 +751,27 @@
         }
 
         function renderHistoryStats() {
+            const now = new Date();
+            const todayStrOnly = now.toISOString().split('T')[0];
+            
+            function isCurrentWeek(dateStr) {
+                if (!dateStr) return false;
+                const d = new Date(dateStr);
+                const curr = new Date(now);
+                const firstDayOfWeek = new Date(curr.setDate(curr.getDate() - curr.getDay() + (curr.getDay() === 0 ? -6: 1)));
+                firstDayOfWeek.setHours(0,0,0,0);
+                const lastDayOfWeek = new Date(firstDayOfWeek);
+                lastDayOfWeek.setDate(lastDayOfWeek.getDate() + 6);
+                lastDayOfWeek.setHours(23,59,59,999);
+                return d >= firstDayOfWeek && d <= lastDayOfWeek;
+            }
+
+            function isCurrentMonth(dateStr) {
+                if (!dateStr) return false;
+                const d = new Date(dateStr);
+                return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+            }
+
             ['today', 'week', 'month', 'total'].forEach(period => {
                 const container = document.getElementById(`stats-${period}`);
                 container.innerHTML = '';
@@ -700,7 +780,14 @@
                     let sum = 0;
                     (state.transactions || []).forEach(tr => {
                         if (tr.userId === u.id) {
-                            if (period === 'total' || tr.timestamp.startsWith(todayStr)) {
+                            const trDateStr = tr.timestamp ? tr.timestamp.split('T')[0] : '';
+                            if (period === 'total') {
+                                sum += tr.reward;
+                            } else if (period === 'today' && trDateStr === todayStrOnly) {
+                                sum += tr.reward;
+                            } else if (period === 'week' && isCurrentWeek(trDateStr)) {
+                                sum += tr.reward;
+                            } else if (period === 'month' && isCurrentMonth(trDateStr)) {
                                 sum += tr.reward;
                             }
                         }
@@ -720,6 +807,17 @@
             const task = state.tasks.find(t => t.id === taskId);
             if (task) {
                 task.status = 'pending';
+                saveToFirebase();
+                renderApp();
+            }
+        }
+
+        function deleteUserTask(taskId) {
+            const task = state.tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            if (confirm(`Opravdu chceš odstranit úkol "${task.title}" ze svého seznamu?`)) {
+                state.tasks = state.tasks.filter(t => t.id !== taskId);
                 saveToFirebase();
                 renderApp();
             }
@@ -776,14 +874,14 @@
                 category: task.category,
                 reward: reward,
                 assignedTo: state.currentRole,
-                status: 'pending',
+                status: 'open',
                 date: state.selectedDate
             };
 
             state.tasks.push(newTask);
             saveToFirebase();
             renderApp();
-            alert(`Úkol "${newTask.title}" byl odeslán ke kontrole (+${reward} zlaťáky)!`);
+            alert(`Úkol "${newTask.title}" byl přidán na tvou kartu!`);
         }
 
         function openReassignModal(taskId) {
@@ -805,6 +903,45 @@
             closeReassignModal();
             saveToFirebase();
             renderApp();
+        }
+
+        function openManualCoinsModal(userId) {
+            const user = state.users.find(u => u.id === userId);
+            if (!user) return;
+            state.manualCoinsUserId = userId;
+            document.getElementById('manual-coins-username').innerText = `Uživatel: ${user.name} (Aktuálně: ${user.coins} zlaťáků)`;
+            document.getElementById('manual-coins-input').value = user.coins;
+            document.getElementById('manual-coins-modal').classList.remove('hidden');
+            document.getElementById('manual-coins-modal').classList.add('flex');
+        }
+
+        function closeManualCoinsModal() {
+            state.manualCoinsUserId = null;
+            document.getElementById('manual-coins-modal').classList.remove('flex');
+            document.getElementById('manual-coins-modal').classList.add('hidden');
+        }
+
+        function confirmManualCoins() {
+            const inputEl = document.getElementById('manual-coins-input');
+            const finalVal = parseInt(inputEl.value);
+            const user = state.users.find(u => u.id === state.manualCoinsUserId);
+            if (user && !isNaN(finalVal)) {
+                const diff = finalVal - user.coins;
+                user.coins = finalVal;
+                if (diff !== 0) {
+                    if (!state.transactions) state.transactions = [];
+                    state.transactions.push({
+                        id: Date.now(),
+                        userId: user.id,
+                        taskTitle: '[Ruční úprava zlaťáků]',
+                        reward: diff,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+                saveToFirebase();
+                renderApp();
+            }
+            closeManualCoinsModal();
         }
 
         function approveTask(taskId, ratio) {
@@ -840,7 +977,7 @@
             const user = state.users.find(u => u.id === task.assignedTo);
             if (!user) return;
 
-            if (confirm(`Opravdu chceš vrátit úkol "${task.title}" uživateli ${user.name}? Zlaťáky budou odečteny a úkol se vrátí k novému splnění.`)) {
+            if (confirm(`Opravdu chceš vrátit úkol "${task.title}" uživateli ${user.name}? Zlaťáky (${task.reward}) budou odečteny a úkol se vrátí k novému splnění.`)) {
                 user.coins = Math.max(0, user.coins - task.reward);
                 task.status = 'open';
 
@@ -866,6 +1003,7 @@
 
             if (!title) {
                 alert('Zadej název úkolu.');
+                // Zde pokračujeme beze změny
                 return;
             }
 
