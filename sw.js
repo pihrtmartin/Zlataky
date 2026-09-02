@@ -1,18 +1,13 @@
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open('app-cache').then((cache) => {
-      return cache.addAll([
-        './index.html',
-        './manifest.json'
-      ]);
-    })
-  );
-});
-
 self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then((response) => {
-      return response || fetch(e.request);
+      return response || fetch(e.request).catch(() => {
+        // Pokud fetch selže (např. chybí připojení), vracíme prázdnou odpověď nebo fallback
+        return new Response('Offline / Chyba sítě', {
+          status: 503,
+          statusText: 'Service Unavailable'
+        });
+      });
     })
   );
 });
