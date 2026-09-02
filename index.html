@@ -24,7 +24,7 @@
         const firebaseConfig = {
             apiKey: "AIzaSyCH17bdu0nPGjKPER9d6VxyNVFs-1VAtVE",
             authDomain: "zlataky-bd621.firebaseapp.com",
-            databaseURL: "https://zlataky-bd621-default-rtdb.firebaseio.com/",
+            databaseURL: "https://zlataky-bd621-default-rtdb.europe-west1.firebasedatabase.app/",
             projectId: "zlataky-bd621",
             storageBucket: "zlataky-bd621.firebasestorage.app",
             messagingSenderId: "392090590201",
@@ -267,11 +267,9 @@
 
         // Pomocná funkce pro automatické vygenerování úkolů na dnešní den (se střídáním obden)
         function ensureDailyTasksExist(targetDateStr) {
-            // Zjistíme, zda pro daný den už nějaké úkoly existují (kromě dobrovolných)
             const existingForDate = state.tasks.filter(t => t.date === targetDateStr && t.assignedTo !== 'volunteer');
-            if (existingForDate.length > 0) return; // Pokud existují, generovat nebudeme
+            if (existingForDate.length > 0) return;
 
-            // Výpočet střídání obden (např. sudý/lichý den v roce nebo podle data)
             const dObj = new Date(targetDateStr);
             const startOfYear = new Date(dObj.getFullYear(), 0, 0);
             const diff = dObj - startOfYear;
@@ -279,29 +277,24 @@
             const dayOfYear = Math.floor(diff / oneDay);
             const isEvenDay = dayOfYear % 2 === 0;
 
-            // Střídající se úkol za 2 zlaťáky (např. jednou Elík, jednou Tofík)
             const alternatingAssignee = isEvenDay ? 'elik' : 'tofik';
             const alternatingTaskTitle = isEvenDay ? 'Charlie - záchod, jídlo' : 'Vysát - koupelna, chodba, záchod';
 
             const newDailyTasks = [
-                // Střídající se úkol (2 zlaťáky)
                 { id: Date.now() + Math.random(), title: alternatingTaskTitle, category: 'Péče', reward: 2, assignedTo: alternatingAssignee, status: 'open', date: targetDateStr },
                 
-                // Elík - 5 každodenních úkolů
                 { id: Date.now() + Math.random(), title: 'Ustlat postel', category: 'Úklid', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
                 { id: Date.now() + Math.random(), title: 'Uklidit pokoj', category: 'Úklid', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
                 { id: Date.now() + Math.random(), title: 'Připravit do školy', category: 'Škola', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
                 { id: Date.now() + Math.random(), title: 'Úkoly do školy', category: 'Škola', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
                 { id: Date.now() + Math.random(), title: 'Svačina do školy', category: 'Škola', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
 
-                // Tofík - 5 každodenních úkolů
                 { id: Date.now() + Math.random(), title: 'Ustlat postel', category: 'Úklid', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
                 { id: Date.now() + Math.random(), title: 'Uklidit pokoj', category: 'Úklid', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
                 { id: Date.now() + Math.random(), title: 'Připravit do školy', category: 'Škola', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
                 { id: Date.now() + Math.random(), title: 'Úkoly do školy', category: 'Škola', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
                 { id: Date.now() + Math.random(), title: 'Svačina do školy', category: 'Škola', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
 
-                // Výchozí dobrovolné úkoly pro den
                 { id: Date.now() + Math.random(), title: 'Vyklidit myčku', category: 'Domácnost', reward: 2, allowHalf: true, assignedTo: 'volunteer', status: 'volunteer', date: targetDateStr },
                 { id: Date.now() + Math.random(), title: 'Vysát celý byt', category: 'Úklid', reward: 4, allowHalf: true, assignedTo: 'volunteer', status: 'volunteer', date: targetDateStr }
             ];
@@ -320,7 +313,6 @@
                     state.transactions = data.transactions || state.transactions;
                 }
                 
-                // Vždy zajistíme, že dnešní den má vygenerované úkoly
                 ensureDailyTasksExist(todayStr);
                 saveToFirebase();
                 renderApp();
@@ -512,12 +504,10 @@
                 }
             }
 
-            // Vykreslení sekce "Nesplněno" z předchozích dní (pro správce)
             const overdueSection = document.getElementById('overdue-section');
             const overdueContainer = document.getElementById('overdue-tasks-container');
             overdueContainer.innerHTML = '';
 
-            // Hledáme úkoly z minulých dní, které zůstaly v statusu 'open'
             const overdueTasks = state.tasks.filter(t => t.date < todayStr && t.status === 'open' && t.assignedTo !== 'volunteer');
 
             if (isParent && overdueTasks.length > 0) {
@@ -542,7 +532,6 @@
                 overdueSection.classList.add('hidden');
             }
 
-            // Karty uživatelů
             const cardsContainer = document.getElementById('cards-container');
             cardsContainer.innerHTML = '';
             let targetUsers = state.cardViewMode === 'kids' ? state.users.filter(u => u.id === 'elik' || u.id === 'tofik') : state.users;
@@ -607,7 +596,6 @@
                 cardsContainer.innerHTML += html;
             });
 
-            // Dobrovolné úkoly
             const volContainer = document.getElementById('volunteer-tasks-container');
             volContainer.innerHTML = '';
             const volTasks = state.tasks.filter(t => t.assignedTo === 'volunteer');
@@ -628,7 +616,6 @@
                 `;
             });
 
-            // Schvalování rodiči
             const pendingContainer = document.getElementById('pending-review-container');
             pendingContainer.innerHTML = '';
             const pendingTasks = state.tasks.filter(t => t.status === 'pending');
@@ -655,7 +642,6 @@
                 });
             }
 
-            // Žebříček
             const lbContainer = document.getElementById('leaderboard-container');
             lbContainer.innerHTML = '';
             let sortedUsers = [...state.users].sort((a, b) => b.coins - a.coins);
@@ -739,7 +725,6 @@
             }
         }
 
-        // Akce pro úkoly v sekci "Nesplněno z předchozích dní"
         function handleOverdueAction(taskId, action) {
             const task = state.tasks.find(t => t.id === taskId);
             if (!task) return;
@@ -747,10 +732,8 @@
             const user = state.users.find(u => u.id === task.assignedTo);
 
             if (action === 'delete') {
-                // Smazat bez vlivu na zlaťáky
                 state.tasks = state.tasks.filter(t => t.id !== taskId);
             } else if (action === 'approve') {
-                // Potvrdit splnění - přičíst zlaťáky
                 task.status = 'done';
                 if (user) {
                     user.coins += task.reward;
@@ -764,7 +747,6 @@
                     });
                 }
             } else if (action === 'penalize') {
-                // Označit jako nesplněno - odečíst zlaťáky
                 task.status = 'failed';
                 if (user) {
                     user.coins = Math.max(0, user.coins - task.reward);
@@ -835,7 +817,7 @@
                     if (earned > 0) {
                         user.coins += earned;
                     } else if (ratio === 0) {
-                        user.coins = Math.max(0, user.coins - task.reward); // Při zamítnutí odečteme plnou odměnu nebo dle přání
+                        user.coins = Math.max(0, user.coins - task.reward);
                     }
                     if (!state.transactions) state.transactions = [];
                     state.transactions.push({
@@ -883,7 +865,7 @@
             const reward = parseInt(document.getElementById('new-task-reward').value) || 1;
 
             if (!title) {
-                alert('Zadej název úkolu nesplněného / nového.');
+                alert('Zadej název úkolu.');
                 return;
             }
 
