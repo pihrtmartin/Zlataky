@@ -1325,6 +1325,7 @@
                 task.status = 'open';
 
                 if (!state.transactions) state.transactions = [];
+                state.transactions.path({ ... }) // fixed syntax below
                 state.transactions.push({
                     id: Date.now(),
                     userId: user.id,
@@ -1368,3 +1369,4 @@
     </script>
 </body>
 </html>
+```[cite: 1]
