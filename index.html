@@ -24,7 +24,7 @@
         const firebaseConfig = {
             apiKey: "AIzaSyCH17bdu0nPGjKPER9d6VxyNVFs-1VAtVE",
             authDomain: "zlataky-bd621.firebaseapp.com",
-            databaseURL: "https://zlataky-bd621-default-rtdb.firebaseio.com",
+            databaseURL: "https://zlataky-bd621-default-rtdb.firebaseio.com/",
             projectId: "zlataky-bd621",
             storageBucket: "zlataky-bd621.firebasestorage.app",
             messagingSenderId: "392090590201",
@@ -244,12 +244,6 @@
 
     <!-- JavaScriptová logika -->
     <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js')
-                .then(() => console.log('Service Worker zaregistrován'))
-                .catch((err) => console.log('Chyba SW:', err));
-        }
-
         let todayStr = new Date().toISOString().split('T')[0];
 
         let state = {
