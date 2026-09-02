@@ -66,6 +66,7 @@
         <!-- Navigační záložky -->
         <div class="flex flex-wrap bg-white rounded-2xl shadow-sm p-1.5 border border-slate-200 gap-1">
             <button onclick="switchTab('today')" id="tab-btn-today" class="flex-1 py-2.5 px-2 text-xs sm:text-sm font-bold rounded-xl bg-amber-50 text-amber-700 transition">Dnešní přehled</button>
+            <button onclick="switchTab('rewards')" id="tab-btn-rewards" class="flex-1 py-2.5 px-2 text-xs sm:text-sm font-bold rounded-xl text-slate-600 hover:bg-slate-50 transition">Odměny</button>
             <button onclick="switchTab('history')" id="tab-btn-history" class="flex-1 py-2.5 px-2 text-xs sm:text-sm font-bold rounded-xl text-slate-600 hover:bg-slate-50 transition">Historie</button>
             <button onclick="switchTab('review')" id="tab-btn-review" class="flex-1 py-2.5 px-2 text-xs sm:text-sm font-bold rounded-xl text-slate-600 hover:bg-slate-50 transition">Ke kontrole <span id="badge-review" class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full ml-1">0</span></button>
             <button onclick="switchTab('stats')" id="tab-btn-stats" class="flex-1 py-2.5 px-2 text-xs sm:text-sm font-bold rounded-xl text-slate-600 hover:bg-slate-50 transition">Žebříček</button>
@@ -87,6 +88,9 @@
                 </div>
             </div>
 
+            <!-- Sekce: Kolo štěstí (zobrazí se po splnění všech povinných úkolů) -->
+            <div id="wheel-banner-container"></div>
+
             <!-- Sekce: Nesplněno z předchozích dní (Viditelná pro správce) -->
             <div id="overdue-section" class="bg-red-50/60 border border-red-200 rounded-2xl p-5 shadow-sm hidden">
                 <h3 class="font-bold text-red-800 mb-1 flex items-center gap-2">
@@ -106,6 +110,29 @@
                 </h3>
                 <p class="text-xs text-slate-400 mb-4">Tyto úkoly po splnění nezmizí – můžeš si je vzít kdykoliv znovu (klidně víckrát denně).</p>
                 <div class="space-y-3" id="volunteer-tasks-container"></div>
+            </div>
+        </section>
+
+        <!-- ZÁLOŽKA: Odměny za zlaťáky -->
+        <section id="tab-rewards" class="space-y-6 hidden">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-700 flex items-center gap-2">
+                            <i class="fa-solid fa-gift text-amber-500"></i> Katalog odměn
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Vyměň si nasbírané zlaťáky za odměny!</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="rewards-catalog-container"></div>
+            </div>
+
+            <!-- Žádosti o odměny (pro rodiče ke schválení) -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+                <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-amber-600"></i> Žádosti o odměny od dětí
+                </h3>
+                <div class="space-y-3" id="reward-requests-container"></div>
             </div>
         </section>
 
@@ -180,6 +207,15 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Historie všech transakcí s možností mazání -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-slate-700 text-sm"><i class="fa-solid fa-clock-rotate-left mr-1 text-amber-500"></i> Podrobná historie akcí a transakcí</h3>
+                </div>
+                <p class="text-xs text-slate-400">Jako správce zde můžeš ikonou koše smazat jakoukoliv položku z historie (pro účely testování).</p>
+                <div class="space-y-2 max-h-96 overflow-y-auto pr-1" id="full-transactions-container"></div>
+            </div>
         </section>
 
         <!-- ZÁLOŽKA 3: Ke kontrole -->
@@ -200,6 +236,26 @@
         </section>
 
     </main>
+
+    <!-- MODÁLNÍ OKNO PRO KOLO ŠTĚSTÍ -->
+    <div id="wheel-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 space-y-5 shadow-2xl text-center">
+            <div class="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full mx-auto flex items-center justify-center text-3xl font-bold animate-bounce shadow-inner">
+                <i class="fa-solid fa-dharmachakra"></i>
+            </div>
+            <div>
+                <h3 class="font-extrabold text-xl text-slate-800">Kolo štěstí</h3>
+                <p class="text-xs text-slate-500 mt-1">Splnil jsi všechny dnešní povinné úkoly! Zatoč si pro zlaťáky navíc.</p>
+            </div>
+            <div id="wheel-result-box" class="py-6 bg-amber-50 rounded-2xl border border-amber-200">
+                <p id="wheel-status-text" class="text-base font-bold text-amber-800">Kolo je připraveno k otočení!</p>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button id="spin-btn" onclick="spinTheWheel()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm py-3 rounded-xl transition shadow-sm">Zatočit kolo!</button>
+                <button onclick="closeWheelModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs py-3 rounded-xl transition">Zavřít</button>
+            </div>
+        </div>
+    </div>
 
     <!-- MODÁLNÍ OKNO PRO PIN -->
     <div id="pin-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
@@ -281,7 +337,16 @@
                 { id: 'tofik', name: 'Tofík', icon: 'fa-solid fa-hockey-puck', coins: 0, pin: null, isParent: false }
             ],
             transactions: [],
-            tasks: []
+            tasks: [],
+            rewards: [
+                { id: 1, title: 'Extra 30 minut na tabletu/mobilu', cost: 10, icon: 'fa-solid fa-tablet-screen-button' },
+                { id: 2, title: 'Výběr filmu na večerní sledování', cost: 15, icon: 'fa-solid fa-film' },
+                { id: 3, title: 'Čokoláda / Dobrota dle výběru', cost: 20, icon: 'fa-solid fa-cookie-bite' },
+                { id: 4, title: 'Společná hra s rodiči dle vlastní volby', cost: 25, icon: 'fa-solid fa-gamepad' },
+                { id: 5, title: 'Ušetření od jednoho domácího úkolu', cost: 35, icon: 'fa-solid fa-shield-heart' }
+            ],
+            rewardRequests: [],
+            wheelSpins: {} // klíč: "date_userid", hodnota: true/false
         };
 
         // Pomocná funkce pro automatické vygenerování úkolů na dnešní den (se střídáním obden) + pevné dobrovolné úkoly
@@ -353,6 +418,9 @@
                     state.users = data.users || state.users;
                     state.tasks = data.tasks || state.tasks;
                     state.transactions = data.transactions || state.transactions;
+                    state.rewards = data.rewards || state.rewards;
+                    state.rewardRequests = data.rewardRequests || state.rewardRequests;
+                    state.wheelSpins = data.wheelSpins || state.wheelSpins;
                 }
                 
                 ensureDailyTasksExist(todayStr);
@@ -367,7 +435,10 @@
             window.firebaseSet(dbRef, {
                 users: state.users,
                 tasks: state.tasks,
-                transactions: state.transactions
+                transactions: state.transactions,
+                rewards: state.rewards,
+                rewardRequests: state.rewardRequests,
+                wheelSpins: state.wheelSpins
             }).catch((error) => {
                 console.error("Chyba při ukládání do Firebase:", error);
             });
@@ -470,7 +541,7 @@
         }
 
         function switchTab(tabName) {
-            ['today', 'history', 'review', 'stats', 'add', 'settings'].forEach(t => {
+            ['today', 'rewards', 'history', 'review', 'stats', 'add', 'settings'].forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 if (el) el.classList.add('hidden');
                 const btn = document.getElementById(`tab-btn-${t}`);
@@ -488,6 +559,7 @@
             }
             if (tabName === 'settings') renderPinSettings();
             if (tabName === 'history') renderHistoryStats();
+            if (tabName === 'rewards') renderRewardsTab();
             renderApp();
         }
 
@@ -545,6 +617,9 @@
                     return;
                 }
             }
+
+            // Kolo štěstí banner pro aktuální roli, pokud jde o dítě a má splněno
+            renderWheelBanner();
 
             const overdueSection = document.getElementById('overdue-section');
             const overdueContainer = document.getElementById('overdue-tasks-container');
@@ -618,7 +693,6 @@
                         if (isParent && task.status !== 'done') {
                             actionButtons += `<button onclick="openReassignModal(${task.id})" title="Zastoupit" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs p-1.5 rounded-lg transition"><i class="fa-solid fa-right-left"></i></button>`;
                         }
-                        // Tlačítko pro smazání vzetého dobrovolného úkolu / náhradního úkolu, pokud si to uživatel rozmyslel (pokud je ve stavu open nebo pending a uživatel je vlastníkem karty nebo rodič)
                         if ((task.status === 'open' || task.status === 'pending') && (state.currentRole === user.id || isParent)) {
                             actionButtons += `<button onclick="deleteUserTask(${task.id})" title="Zrušit a odstranit ze seznamu" class="bg-slate-100 hover:bg-red-100 text-slate-400 hover:text-red-600 text-xs p-1.5 rounded-lg transition"><i class="fa-solid fa-trash-can"></i></button>`;
                         }
@@ -669,10 +743,10 @@
             const pendingContainer = document.getElementById('pending-review-container');
             pendingContainer.innerHTML = '';
             const pendingTasks = state.tasks.filter(t => t.status === 'pending');
-            document.getElementById('badge-review').innerText = pendingTasks.length;
+            document.getElementById('badge-review').innerText = pendingTasks.length + (state.rewardRequests ? state.rewardRequests.filter(r => r.status === 'pending').length : 0);
 
             if (pendingTasks.length === 0) {
-                pendingContainer.innerHTML = `<p class="text-sm text-slate-400 italic">Všechno je zkontrolováno.</p>`;
+                pendingContainer.innerHTML = `<p class="text-sm text-slate-400 italic">Všechny úkoly jsou zkontrolovány.</p>`;
             } else {
                 pendingTasks.forEach(task => {
                     const user = state.users.find(u => u.id === task.assignedTo) || { name: 'Někdo' };
@@ -691,6 +765,9 @@
                     `;
                 });
             }
+
+            renderRewardRequestsReview();
+            renderFullTransactionsHistory();
 
             const lbContainer = document.getElementById('leaderboard-container');
             lbContainer.innerHTML = '';
@@ -750,7 +827,269 @@
             renderApp();
         }
 
+        function renderRewardsTab() {
+            const container = document.getElementById('rewards-catalog-container');
+            container.innerHTML = '';
+            const currentUser = state.users.find(u => u.id === state.currentRole);
+            const userCoins = currentUser ? currentUser.coins : 0;
+
+            state.rewards.forEach(rew => {
+                const canAfford = userCoins >= rew.cost;
+                container.innerHTML += `
+                    <div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-200 gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl font-bold"><i class="${rew.icon}"></i></div>
+                            <div>
+                                <p class="font-bold text-slate-800 text-sm">${rew.title}</p>
+                                <p class="text-xs text-amber-600 font-extrabold mt-0.5"><i class="fa-solid fa-coins mr-1"></i> ${rew.cost} zlaťáků</p>
+                            </div>
+                        </div>
+                        <button onclick="requestReward(${rew.id})" ${!canAfford ? 'disabled' : ''} class="px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm ${canAfford ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}">
+                            ${canAfford ? 'Vyžádat odměnu' : 'Nedostatek'}
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function renderRewardRequestsReview() {
+            const container = document.getElementById('reward-requests-container');
+            if (!container) return;
+            container.innerHTML = '';
+            const isParent = (state.currentRole === 'tatka' || state.currentRole === 'mamka');
+
+            const requests = state.rewardRequests || [];
+            if (requests.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 italic">Žádné aktivní žádosti o odměny.</p>`;
+                return;
+            }
+
+            requests.forEach(req => {
+                const user = state.users.find(u => u.id === req.userId) || { name: 'Neznámý' };
+                let statusBadge = '';
+                if (req.status === 'pending') statusBadge = '<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium">Čeká na rodiče</span>';
+                if (req.status === 'approved') statusBadge = '<span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-medium">Schváleno ✓</span>';
+                if (req.status === 'rejected') statusBadge = '<span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded font-medium">Zamítnuto</span>';
+
+                let actions = '';
+                if (req.status === 'pending' && isParent) {
+                    actions = `
+                        <div class="flex gap-2">
+                            <button onclick="handleRewardRequest(${req.id}, 'approve')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded-lg font-medium">Schválit (-${req.cost}🪙)</button>
+                            <button onclick="handleRewardRequest(${req.id}, 'reject')" class="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg font-medium">Zamítnout</button>
+                        </div>
+                    `;
+                }
+
+                container.innerHTML += `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-slate-50 rounded-xl border border-slate-100 gap-2">
+                        <div>
+                            <p class="font-bold text-slate-800 text-xs sm:text-sm">${req.rewardTitle} <span class="font-normal text-slate-400 text-xs">(${req.cost} 🪙)</span></p>
+                            <p class="text-xs text-slate-500">Žadatel: <span class="font-semibold text-amber-700">${user.name}</span> • <span class="text-slate-400">${req.timestamp ? req.timestamp.split('T')[0] : ''}</span></p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            ${statusBadge}
+                            ${actions}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function requestReward(rewardId) {
+            const rew = state.rewards.find(r => r.id === rewardId);
+            const user = state.users.find(u => u.id === state.currentRole);
+            if (!rew || !user) return;
+
+            if (user.coins < rew.cost) {
+                alert('Na tuto odměnu nemáš dostatek zlaťáků.');
+                return;
+            }
+
+            if (!state.rewardRequests) state.rewardRequests = [];
+            state.rewardRequests.push({
+                id: Date.now(),
+                userId: user.id,
+                rewardTitle: rew.title,
+                cost: rew.cost,
+                status: 'pending',
+                timestamp: new Date().toISOString()
+            });
+
+            saveToFirebase();
+            renderApp();
+            renderRewardsTab();
+            alert('Žádost o odměnu byla odeslána rodičům ke schválení!');
+        }
+
+        function handleRewardRequest(reqId, action) {
+            const req = state.rewardRequests.find(r => r.id === reqId);
+            if (!req) return;
+
+            const user = state.users.find(u => u.id === req.userId);
+
+            if (action === 'approve') {
+                if (user && user.coins >= req.cost) {
+                    user.coins -= req.cost;
+                    req.status = 'approved';
+                    if (!state.transactions) state.transactions = [];
+                    state.transactions.push({
+                        id: Date.now(),
+                        userId: user.id,
+                        taskTitle: `[Odměna] ${req.rewardTitle}`,
+                        reward: -req.cost,
+                        timestamp: new Date().toISOString()
+                    });
+                } else {
+                    alert('Uživatel již nemá dostatek zlaťáků.');
+                    return;
+                }
+            } else {
+                req.status = 'rejected';
+            }
+
+            saveToFirebase();
+            renderApp();
+            renderRewardsTab();
+        }
+
+        function renderWheelBanner() {
+            const container = document.getElementById('wheel-banner-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const isChild = (state.currentRole === 'elik' || state.currentRole === 'tofik');
+            if (!isChild) return;
+
+            // Zkontrolujeme, zda má uživatel na vybraný den splněné všechny své povinné úkoly (assignedTo === user.id, ne volunteer)
+            const userTasks = state.tasks.filter(t => t.assignedTo === state.currentRole && t.date === state.selectedDate && t.status !== 'volunteer');
+            if (userTasks.length === 0) return;
+
+            const allDone = userTasks.every(t => t.status === 'done');
+            if (!allDone) return;
+
+            const spinKey = `${state.selectedDate}_${state.currentRole}`;
+            const alreadySpun = state.wheelSpins && state.wheelSpins[spinKey];
+
+            if (alreadySpun) {
+                container.innerHTML = `
+                    <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-amber-200 text-amber-800 rounded-xl flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-check"></i></div>
+                            <div>
+                                <p class="font-bold text-amber-900 text-sm">Kolo štěstí pro dnešní den je už otočené!</p>
+                                <p class="text-xs text-amber-700">Skvělá práce, všechny úkoly máš hotové.</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="bg-gradient-to-r from-amber-500 to-yellow-500 rounded-2xl p-5 text-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl font-bold animate-spin"><i class="fa-solid fa-dharmachakra"></i></div>
+                            <div>
+                                <p class="font-extrabold text-base">Máš splněno! Kolo štěstí čeká!</p>
+                                <p class="text-xs text-yellow-100">Zatoč si a vyhraj zlaťáky navíc.</p>
+                            </div>
+                        </div>
+                        <button onclick="openWheelModal()" class="bg-white text-amber-700 font-extrabold px-5 py-2.5 rounded-xl text-xs shadow-md hover:bg-yellow-50 transition uppercase tracking-wider">Zatočit kolo!</button>
+                    </div>
+                `;
+            }
+        }
+
+        function openWheelModal() {
+            document.getElementById('wheel-result-box').innerHTML = `<p class="text-base font-bold text-amber-800">Kolo je připraveno k otočení!</p>`;
+            document.getElementById('spin-btn').classList.remove('hidden');
+            document.getElementById('wheel-modal').classList.remove('hidden');
+            document.getElementById('wheel-modal').classList.add('flex');
+        }
+
+        function closeWheelModal() {
+            document.getElementById('wheel-modal').classList.remove('flex');
+            document.getElementById('wheel-modal').classList.add('hidden');
+            renderApp();
+        }
+
+        function spinTheWheel() {
+            // Pravděpodobnosti: 
+            // Nejvíce polí 1 zlatak (např. 60% šance - 6 čísel z 10)
+            // Méně polí 2 zlataky (např. 30% šance - 3 čísla z 10)
+            // Pouze jedno pole 3 zlataky (např. 10% šance - 1 číslo z 10)
+            const wheelPool = [1, 1, 1, 1, 1, 1, 2, 2, 2, 3];
+            const winningReward = wheelPool[Math.floor(Math.random() * wheelPool.length)];
+
+            const user = state.users.find(u => u.id === state.currentRole);
+            if (user) {
+                user.coins += winningReward;
+                if (!state.transactions) state.transactions = [];
+                state.transactions.push({
+                    id: Date.now(),
+                    userId: user.id,
+                    taskTitle: '🎰 Kolo štěstí (výhra)',
+                    reward: winningReward,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+            const spinKey = `${state.selectedDate}_${state.currentRole}`;
+            if (!state.wheelSpins) state.wheelSpins = {};
+            state.wheelSpins[spinKey] = true;
+
+            saveToFirebase();
+
+            document.getElementById('wheel-result-box').innerHTML = `
+                <p class="text-xs uppercase font-bold text-amber-600">Gratulace!</p>
+                <p class="text-3xl font-black text-amber-900 mt-1">+${winningReward} zlaťáků 🪙</p>
+            `;
+            document.getElementById('spin-btn').classList.add('hidden');
+        }
+
+        function renderFullTransactionsHistory() {
+            const container = document.getElementById('full-transactions-container');
+            if (!container) return;
+            container.innerHTML = '';
+            const isParent = (state.currentRole === 'tatka' || state.currentRole === 'mamka');
+
+            const txs = (state.transactions || []).slice().reverse();
+            if (txs.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 italic">Žádné záznamy v historii.</p>`;
+                return;
+            }
+
+            txs.forEach(tr => {
+                const user = state.users.find(u => u.id === tr.userId) || { name: 'Neznámý' };
+                let dateStr = tr.timestamp ? tr.timestamp.replace('T', ' ').substring(0, 16) : '';
+                let deleteBtn = isParent ? `<button onclick="deleteTransaction(${tr.id})" title="Smazat záznam z historie" class="text-slate-300 hover:text-red-600 p-1 rounded transition"><i class="fa-solid fa-trash-can text-xs"></i></button>` : '';
+
+                container.innerHTML += `
+                    <div class="flex justify-between items-center text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-100 gap-2">
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <span class="font-bold text-slate-700 whitespace-nowrap">${user.name}:</span>
+                            <span class="text-slate-600 truncate">${tr.taskTitle}</span>
+                            <span class="text-[10px] text-slate-400 whitespace-nowrap">(${dateStr})</span>
+                        </div>
+                        <div class="flex items-center gap-2 whitespace-nowrap">
+                            <span class="font-bold ${tr.reward >= 0 ? 'text-amber-600' : 'text-red-600'}">${tr.reward >= 0 ? '+' : ''}${tr.reward} 🪙</span>
+                            ${deleteBtn}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function deleteTransaction(txId) {
+            if (confirm('Opravdu chceš smazat tento záznam z historie? (Pozor: zlaťáky uživateli v bilanci zůstanou, maže se pouze záznam v historii).')) {
+                state.transactions = state.transactions.filter(tr => tr.id !== txId);
+                saveToFirebase();
+                renderApp();
+                renderHistoryStats();
+            }
+        }
+
         function renderHistoryStats() {
+            renderFullTransactionsHistory();
             const now = new Date();
             const todayStrOnly = now.toISOString().split('T')[0];
             
@@ -774,6 +1113,7 @@
 
             ['today', 'week', 'month', 'total'].forEach(period => {
                 const container = document.getElementById(`stats-${period}`);
+                if (!container) return;
                 container.innerHTML = '';
 
                 state.users.forEach(u => {
@@ -1003,7 +1343,6 @@
 
             if (!title) {
                 alert('Zadej název úkolu.');
-                // Zde pokračujeme beze změny
                 return;
             }
 
