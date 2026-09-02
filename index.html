@@ -15,6 +15,30 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDK (Modular) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCH17bdu0nPGjKPER9d6VxyNVFs-1VAtVE",
+            authDomain: "zlataky-bd621.firebaseapp.com",
+            projectId: "zlataky-bd621",
+            storageBucket: "zlataky-bd621.firebasestorage.app",
+            messagingSenderId: "392090590201",
+            appId: "1:392090590201:web:2de711a99a45a467383b28"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.firebaseDb = db;
+        window.firebaseRef = ref;
+        window.firebaseSet = set;
+        window.firebaseOnValue = onValue;
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans antialiased pb-20">
 
@@ -234,7 +258,7 @@
                 { id: 'elik', name: 'Elík', icon: 'fa-solid fa-person-swimming', coins: 0, pin: null, isParent: false },
                 { id: 'tofik', name: 'Tofík', icon: 'fa-solid fa-hockey-puck', coins: 0, pin: null, isParent: false }
             ],
-            transactions: [], // Vynulovaná historie
+            transactions: [],
             tasks: [
                 // Elík - povinné úkoly pro dnešek
                 { id: 1, title: 'Charlie - záchod, jídlo', category: 'Péče', reward: 2, assignedTo: 'elik', status: 'open', date: todayStr },
@@ -261,6 +285,38 @@
                 { id: 106, title: 'Vysát pokoj', category: 'Úklid', reward: 1, allowHalf: false, assignedTo: 'volunteer', status: 'volunteer', date: todayStr }
             ]
         };
+
+        let isInitializedFromFirebase = false;
+
+        // Synchronizace s Firebase Realtime Database
+        window.addEventListener('firebase-ready', () => {
+            const dbRef = window.firebaseRef(window.firebaseDb, 'zlatakyApp');
+            window.firebaseOnValue(dbRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    state.users = data.users || state.users;
+                    state.tasks = data.tasks || state.tasks;
+                    state.transactions = data.transactions || state.transactions;
+                } else {
+                    // Pokud je databáze prázdná, ulož výchozí stav
+                    saveToFirebase();
+                }
+                isInitializedFromFirebase = true;
+                renderApp();
+            });
+        });
+
+        function saveToFirebase() {
+            if (!window.firebaseDb) return;
+            const dbRef = window.firebaseRef(window.firebaseDb, 'zlatakyApp');
+            window.firebaseSet(dbRef, {
+                users: state.users,
+                tasks: state.tasks,
+                transactions: state.transactions
+            }).catch((error) => {
+                console.error("Chyba při ukládání do Firebase:", error);
+            });
+        }
 
         function handleRoleSwitchAttempt(targetRoleId) {
             if (targetRoleId === state.currentRole) return;
@@ -340,6 +396,7 @@
             document.getElementById('pin-modal').classList.remove('flex');
             document.getElementById('pin-modal').classList.add('hidden');
             state.pendingRoleSwitch = null;
+            saveToFirebase();
             renderApp();
         }
 
@@ -352,6 +409,7 @@
                     user.pin = null;
                 }
                 alert(`PIN pro ${user.name} byl vyresetován.`);
+                saveToFirebase();
                 renderPinSettings();
             }
         }
@@ -549,7 +607,7 @@
 
             sortedUsers.forEach((u, index) => {
                 const isExpanded = state.expandedLeaderboardUser === u.id;
-                const userTransactions = state.transactions.filter(tr => tr.userId === u.id).reverse();
+                const userTransactions = (state.transactions || []).filter(tr => tr.userId === u.id).reverse();
 
                 let detailsHtml = '';
                 if (isExpanded) {
@@ -599,7 +657,7 @@
 
                 state.users.forEach(u => {
                     let sum = 0;
-                    state.transactions.forEach(tr => {
+                    (state.transactions || []).forEach(tr => {
                         if (tr.userId === u.id) {
                             if (period === 'total' || tr.timestamp.startsWith(todayStr)) {
                                 sum += tr.reward;
@@ -621,6 +679,7 @@
             const task = state.tasks.find(t => t.id === taskId);
             if (task) {
                 task.status = 'pending';
+                saveToFirebase();
                 renderApp();
             }
         }
@@ -641,6 +700,7 @@
             };
 
             state.tasks.push(newTask);
+            saveToFirebase();
             renderApp();
             alert(`Úkol "${newTask.title}" byl odeslán ke kontrole (+${reward} zlaťáky)!`);
         }
@@ -662,6 +722,7 @@
             const task = state.tasks.find(t => t.id === state.activeReassignTaskId);
             if (task) task.assignedTo = targetUser;
             closeReassignModal();
+            saveToFirebase();
             renderApp();
         }
 
@@ -673,6 +734,7 @@
                 const user = state.users.find(u => u.id === task.assignedTo);
                 if (user && earned > 0) {
                     user.coins += earned;
+                    if (!state.transactions) state.transactions = [];
                     state.transactions.push({
                         id: Date.now(),
                         userId: user.id,
@@ -681,6 +743,7 @@
                         timestamp: new Date().toISOString()
                     });
                 }
+                saveToFirebase();
                 renderApp();
             }
         }
@@ -696,6 +759,7 @@
                 user.coins = Math.max(0, user.coins - task.reward);
                 task.status = 'open';
 
+                if (!state.transactions) state.transactions = [];
                 state.transactions.push({
                     id: Date.now(),
                     userId: user.id,
@@ -704,6 +768,7 @@
                     timestamp: new Date().toISOString()
                 });
 
+                saveToFirebase();
                 renderApp();
             }
         }
@@ -732,10 +797,9 @@
 
             state.tasks.push(newTask);
             document.getElementById('new-task-title').value = '';
+            saveToFirebase();
             switchTab('today');
         }
-
-        renderApp();
     </script>
 </body>
 </html>
