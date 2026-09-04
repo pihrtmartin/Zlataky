@@ -70,6 +70,7 @@
             <button onclick="switchTab('history')" id="tab-btn-history" class="flex-1 py-2.5 px-2 text-xs sm:text-sm font-bold rounded-xl text-slate-600 hover:bg-slate-50 transition">Historie</button>
             <button onclick="switchTab('review')" id="tab-btn-review" class="flex-1 py-2.5 px-2 text-xs sm:text-sm font-bold rounded-xl text-slate-600 hover:bg-slate-50 transition">Ke kontrole <span id="badge-review" class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full ml-1">0</span></button>
             <button onclick="switchTab('stats')" id="tab-btn-stats" class="flex-1 py-2.5 px-2 text-xs sm:text-sm font-bold rounded-xl text-slate-600 hover:bg-slate-50 transition">Žebříček</button>
+            <button onclick="switchTab('add')" id="tab-btn-add" class="flex-1 py-2.5 px-2 text-xs sm:text-sm font-bold rounded-xl text-amber-600 hover:bg-amber-50 transition hidden">＋ Přidat úkol</button>
             <button onclick="switchTab('settings')" id="tab-btn-settings" class="flex-1 py-2.5 px-2 text-xs sm:text-sm font-bold rounded-xl text-slate-600 hover:bg-slate-50 transition hidden"><i class="fa-solid fa-gear"></i> PINy</button>
         </div>
 
@@ -131,6 +132,42 @@
                     <i class="fa-solid fa-list-check text-amber-600"></i> Žádosti o odměny od dětí
                 </h3>
                 <div class="space-y-3" id="reward-requests-container"></div>
+            </div>
+        </section>
+
+        <!-- ZÁLOŽKA: Přidat úkol -->
+        <section id="tab-add" class="space-y-6 hidden">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+                <h2 class="text-lg font-bold text-slate-700 flex items-center gap-2">
+                    <i class="fa-solid fa-plus-circle text-amber-600"></i> Přidat nový zlaťákový úkol
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Název úkolu</label>
+                        <input type="text" id="new-task-title" placeholder="Např. Utřít prach v obýváku..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Kategorie</label>
+                        <select id="new-task-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                            <option value="Péče">Péče / Domácnost</option>
+                            <option value="Škola">Škola</option>
+                            <option value="Úklid">Úklid</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Pro koho</label>
+                        <select id="new-task-assignee" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                            <option value="elik">Elík</option>
+                            <option value="tofik">Tofík</option>
+                            <option value="volunteer">Dobrovolný (opakovatelný)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Odměna (zlaťáky)</label>
+                        <input type="number" id="new-task-reward" value="1" min="1" max="20" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+                <button onclick="addNewTask()" class="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm rounded-xl px-6 py-2.5 transition shadow-sm">Uložit a přidat úkol</button>
             </div>
         </section>
 
@@ -198,56 +235,6 @@
         </section>
 
     </main>
-
-    <!-- MODÁLNÍ OKNO PRO PŘIDÁNÍ ÚKOLU K UŽIVATELI -->
-    <div id="add-task-modal" class="fixed inset-0 bg-slate-900/50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
-            <div class="flex justify-between items-center">
-                <h3 class="font-bold text-lg text-slate-800"><i class="fa-solid fa-plus-circle text-amber-500 mr-2"></i>Přidat úkol pro <span id="modal-target-username" class="text-amber-600"></span></h3>
-                <button onclick="closeAddTaskModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 mb-1">Vybrat ze šablon (povinné / dobrovolné)</label>
-                    <select id="task-template-select" onchange="onTemplateSelected(this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
-                        <option value="">-- Vyber existující úkol ze seznamu --</option>
-                    </select>
-                </div>
-
-                <div class="relative flex py-2 items-center">
-                    <div class="flex-grow border-t border-slate-200"></div>
-                    <span class="flex-shrink mx-4 text-slate-400 text-xs uppercase font-semibold">nebo vytvoř vlastní</span>
-                    <div class="flex-grow border-t border-slate-200"></div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 mb-1">Název vlastního úkolu</label>
-                    <input type="text" id="custom-task-title" placeholder="Např. Utřít prach v obýváku..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
-                </div>
-                
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">Kategorie</label>
-                        <select id="custom-task-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
-                            <option value="Péče">Péče / Domácnost</option>
-                            <option value="Škola">Škola</option>
-                            <option value="Úklid">Úklid</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">Odměna (zlaťáky)</label>
-                        <input type="number" id="custom-task-reward" value="1" min="1" max="20" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex gap-2 pt-2">
-                <button onclick="confirmAddTaskToUser()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2.5 rounded-xl transition">Přidat úkol uživateli</button>
-                <button onclick="closeAddTaskModal()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs py-2.5 rounded-xl transition">Zrušit</button>
-            </div>
-        </div>
-    </div>
 
     <!-- MODÁLNÍ OKNO PRO KOLO ŠTĚSTÍ -->
     <div id="wheel-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
@@ -345,8 +332,11 @@
 
         let todayStr = new Date().toISOString().split('T')[0];
 
+        // Načtení uložené role z localStorage zařízení (pokud existuje)
+        let savedRole = localStorage.getItem('zlataky_current_role') || 'tatka';
+
         let state = {
-            currentRole: 'tatka',
+            currentRole: savedRole,
             pendingRoleSwitch: null,
             pinMode: 'verify',
             tempPinBuffer: '',
@@ -355,7 +345,6 @@
             activeReassignTaskId: null,
             expandedLeaderboardUser: null,
             manualCoinsUserId: null,
-            activeAddTaskUserId: null,
             users: [
                 { id: 'tatka', name: 'Taťka', icon: 'fa-solid fa-user-tie', coins: 0, pin: '1234', isParent: true },
                 { id: 'mamka', name: 'Mamka', icon: 'fa-solid fa-user', coins: 0, pin: '1234', isParent: true },
@@ -385,13 +374,11 @@
                 const dayOfYear = Math.floor(diff / oneDay);
                 const isEvenDay = dayOfYear % 2 === 0;
 
-                // Střídané úkoly: Sudý den Elík Charlie, Tofík vysávání. Lichý den obráceně.
-                const elikTaskTitle = isEvenDay ? 'Charlie - záchod, jídlo' : 'Vysát - koupelna, chodba, záchod';
-                const tofikTaskTitle = isEvenDay ? 'Vysát - koupelna, chodba, záchod' : 'Charlie - záchod, jídlo';
+                const alternatingAssignee = isEvenDay ? 'elik' : 'tofik';
+                const alternatingTaskTitle = isEvenDay ? 'Charlie - záchod, jídlo' : 'Vysát - koupelna, chodba, záchod';
 
                 const newDailyTasks = [
-                    { id: Date.now() + Math.random(), title: elikTaskTitle, category: 'Péče', reward: 2, assignedTo: 'elik', status: 'open', date: targetDateStr },
-                    { id: Date.now() + Math.random(), title: tofikTaskTitle, category: 'Péče', reward: 2, assignedTo: 'tofik', status: 'open', date: targetDateStr },
+                    { id: Date.now() + Math.random(), title: alternatingTaskTitle, category: 'Péče', reward: 2, assignedTo: alternatingAssignee, status: 'open', date: targetDateStr },
                     
                     { id: Date.now() + Math.random(), title: 'Ustlat postel', category: 'Úklid', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
                     { id: Date.now() + Math.random(), title: 'Uklidit pokoj', category: 'Úklid', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
@@ -544,6 +531,9 @@
 
         function finalizeRoleSwitch() {
             state.currentRole = state.pendingRoleSwitch;
+            // Uložení aktuální role do localStorage daného zařízení, aby po refresh zůstala zachována
+            localStorage.setItem('zlataky_current_role', state.currentRole);
+
             document.getElementById('pin-modal').classList.remove('flex');
             document.getElementById('pin-modal').classList.add('hidden');
             state.pendingRoleSwitch = null;
@@ -566,7 +556,7 @@
         }
 
         function switchTab(tabName) {
-            ['today', 'rewards', 'history', 'review', 'stats', 'settings'].forEach(t => {
+            ['today', 'rewards', 'history', 'review', 'stats', 'add', 'settings'].forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 if (el) el.classList.add('hidden');
                 const btn = document.getElementById(`tab-btn-${t}`);
@@ -626,15 +616,18 @@
 
         function renderApp() {
             document.getElementById('role-switch').value = state.currentRole;
+            const addTabBtn = document.getElementById('tab-btn-add');
             const settingsTabBtn = document.getElementById('tab-btn-settings');
             
             const isParent = (state.currentRole === 'tatka' || state.currentRole === 'mamka');
 
             if (isParent) {
+                addTabBtn.classList.remove('hidden');
                 settingsTabBtn.classList.remove('hidden');
             } else {
+                addTabBtn.classList.add('hidden');
                 settingsTabBtn.classList.add('hidden');
-                if (!document.getElementById('tab-settings').classList.contains('hidden')) {
+                if (!document.getElementById('tab-add').classList.contains('hidden') || !document.getElementById('tab-settings').classList.contains('hidden')) {
                     switchTab('today');
                     return;
                 }
@@ -677,12 +670,6 @@
             targetUsers.forEach(user => {
                 const userTasks = state.tasks.filter(t => t.assignedTo === user.id && t.date === state.selectedDate);
                 
-                let addTaskButtonHtml = isParent ? `
-                    <button onclick="openAddTaskModal('${user.id}')" class="w-full mt-3 py-2 bg-slate-50 hover:bg-amber-50 text-slate-600 hover:text-amber-700 border border-slate-200 hover:border-amber-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
-                        <i class="fa-solid fa-plus text-amber-500"></i> Přidat úkol pro ${user.name}
-                    </button>
-                ` : '';
-
                 let html = `
                     <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
                         <div>
@@ -739,7 +726,7 @@
                     });
                 }
 
-                html += `</div></div>${addTaskButtonHtml}</div>`;
+                html += `</div></div></div>`;
                 cardsContainer.innerHTML += html;
             });
 
@@ -1169,6 +1156,7 @@
             const task = state.tasks.find(t => t.id === taskId);
             if (task) {
                 task.status = 'pending';
+                // Okamžité uložení do Firebase, aby stav 'pending' hned viděl i rodič na svém zařízení
                 saveToFirebase();
                 renderApp();
             }
@@ -1254,7 +1242,7 @@
 
         function closeReassignModal() {
             state.activeReassignTaskId = null;
-            document.getElementById('reassign-modal').classList.remove('flex');
+            document.getElementById('reassign-modal').classList.remove('hidden');
             document.getElementById('reassign-modal').classList.add('hidden');
         }
 
@@ -1286,7 +1274,7 @@
         function confirmManualCoins() {
             const inputEl = document.getElementById('manual-coins-input');
             const finalVal = parseInt(inputEl.value);
-            const user = state.users.find(u => u.id === state.manualCoinsUserId);
+            const user = state.users.find(u =>.id === state.manualCoinsUserId);
             if (user && !isNaN(finalVal)) {
                 const diff = finalVal - user.coins;
                 user.coins = finalVal;
@@ -1306,92 +1294,6 @@
             closeManualCoinsModal();
         }
 
-        function openAddTaskModal(userId) {
-            state.activeAddTaskUserId = userId;
-            const user = state.users.find(u => u.id === userId);
-            document.getElementById('modal-target-username').innerText = user ? user.name : '';
-            
-            const selectEl = document.getElementById('task-template-select');
-            selectEl.innerHTML = `<option value="">-- Vyber existující úkol ze seznamu --</option>`;
-            
-            // Pevně předdefinované šablony + dynamicky sesbírané z aktuálních úkolů
-            const defaultTemplates = [
-                { title: 'Charlie - záchod, jídlo', category: 'Péče', reward: 2 },
-                { title: 'Vysát - koupelna, chodba, záchod', category: 'Péče', reward: 2 },
-                { title: 'Ustlat postel', category: 'Úklid', reward: 1 },
-                { title: 'Uklidit pokoj', category: 'Úklid', reward: 1 },
-                { title: 'Připravit do školy', category: 'Škola', reward: 1 },
-                { title: 'Úkoly do školy', category: 'Škola', reward: 1 },
-                { title: 'Svačina do školy', category: 'Škola', reward: 1 }
-            ];
-
-            const uniqueTemplates = {};
-            defaultTemplates.forEach(t => { uniqueTemplates[t.title] = t; });
-            state.tasks.forEach(t => {
-                if (!uniqueTemplates[t.title] && t.assignedTo !== 'volunteer') {
-                    uniqueTemplates[t.title] = { title: t.title, category: t.category, reward: t.reward };
-                }
-            });
-
-            Object.values(uniqueTemplates).forEach((tmpl, idx) => {
-                selectEl.innerHTML += `<option value="${idx}" data-title="${escapeHtml(tmpl.title)}" data-category="${escapeHtml(tmpl.category)}" data-reward="${tmpl.reward}">${tmpl.title} (${tmpl.category} - ${tmpl.reward} 🪙)</option>`;
-            });
-
-            document.getElementById('custom-task-title').value = '';
-            document.getElementById('custom-task-reward').value = '1';
-
-            document.getElementById('add-task-modal').classList.remove('hidden');
-            document.getElementById('add-task-modal').classList.add('flex');
-        }
-
-        function escapeHtml(str) {
-            return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-        }
-
-        function closeAddTaskModal() {
-            state.activeAddTaskUserId = null;
-            document.getElementById('add-task-modal').classList.remove('flex');
-            document.getElementById('add-task-modal').classList.add('hidden');
-        }
-
-        function onTemplateSelected(val) {
-            if (val === "") return;
-            const selectEl = document.getElementById('task-template-select');
-            const selectedOpt = selectEl.options[selectEl.selectedIndex];
-            if (selectedOpt) {
-                document.getElementById('custom-task-title').value = selectedOpt.getAttribute('data-title');
-                document.getElementById('custom-task-category').value = selectedOpt.getAttribute('data-category');
-                document.getElementById('custom-task-reward').value = selectedOpt.getAttribute('data-reward');
-            }
-        }
-
-        function confirmAddTaskToUser() {
-            const title = document.getElementById('custom-task-title').value.trim();
-            const category = document.getElementById('custom-task-category').value;
-            const reward = parseInt(document.getElementById('custom-task-reward').value) || 1;
-
-            if (!title) {
-                alert('Zadej nebo vyber název úkolu.');
-                return;
-            }
-
-            const newTask = {
-                id: Date.now() + Math.random(),
-                title: title,
-                category: category,
-                reward: reward,
-                allowHalf: true,
-                assignedTo: state.activeAddTaskUserId,
-                status: 'open',
-                date: state.selectedDate
-            };
-
-            state.tasks.push(newTask);
-            saveToFirebase();
-            closeAddTaskModal();
-            renderApp();
-        }
-
         function approveTask(taskId, ratio) {
             const task = state.tasks.find(t => t.id === taskId);
             if (task) {
@@ -1404,7 +1306,7 @@
                     } else if (ratio === 0) {
                         user.coins = Math.max(0, user.coins - task.reward);
                     }
-                    if (!state.transactions) state.transactions = [];
+                    if (!state.transactions) state.transactions.push();
                     state.transactions.push({
                         id: Date.now(),
                         userId: user.id,
@@ -1426,7 +1328,7 @@
             if (!user) return;
 
             if (confirm(`Opravdu chceš vrátit úkol "${task.title}" uživateli ${user.name}? Zlaťáky (${task.reward}) budou odečteny a úkol se vrátí k novému splnění.`)) {
-                user.coins = Math.max(0, user.coins - task.reward);
+                user.coins = Math.max(0, user.coins - data.reward);
                 task.status = 'open';
 
                 if (!state.transactions) state.transactions = [];
@@ -1441,6 +1343,34 @@
                 saveToFirebase();
                 renderApp();
             }
+        }
+
+        function addNewTask() {
+            const title = document.getElementById('new-task-title').value;
+            const category = document.getElementById('new-task-category'].value;
+            const assignee = document.getElementById('new-task-assignee').value;
+            const reward = parseInt(document.getElementById('new-task-reward').value) || 1;
+
+            if (!title) {
+                alert('Zadej název úkolu.');
+                return;
+            }
+
+            const newTask = {
+                id: Date.now() + Math.random(),
+                title: title,
+                category: category,
+                reward: reward,
+                allowHalf: true,
+                assignedTo: assignee,
+                status: assignee === 'volunteer' ? 'volunteer' : 'open',
+                date: state.selectedDate
+            };
+
+            state.tasks.push(newTask);
+            document.getElementById('new-task-title').value = '';
+            saveToFirebase();
+            switchTab('today');
         }
     </script>
 </body>
