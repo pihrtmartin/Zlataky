@@ -50,6 +50,9 @@
                 <i class="fa-solid fa-coins text-yellow-200"></i> Zlaťáky
             </h1>
             <div class="flex items-center gap-3">
+                <button id="notif-perm-btn" onclick="requestNotificationPermission()" class="bg-amber-600 text-white text-xs font-semibold rounded-lg px-2.5 py-1.5 border border-amber-400 hover:bg-amber-700 transition flex items-center gap-1.5" title="Zapnout upozornění na nové úkoly">
+                    <i class="fa-solid fa-bell"></i> <span id="notif-btn-text">Notifikace</span>
+                </button>
                 <select id="role-switch" onchange="handleRoleSwitchAttempt(this.value)" class="bg-amber-600 text-white text-xs font-semibold rounded-lg px-3 py-1.5 border border-amber-400 focus:outline-none">
                     <option value="tatka">Taťka (Správce)</option>
                     <option value="mamka">Mamka (Správce)</option>
@@ -331,9 +334,8 @@
         }
 
         let todayStr = new Date().toISOString().split('T')[0];
-
-        // Načtení uložené role z localStorage zařízení (pokud existuje)
         let savedRole = localStorage.getItem('zlataky_current_role') || 'tatka';
+        let lastPendingCount = -1;
 
         let state = {
             currentRole: savedRole,
@@ -364,6 +366,24 @@
             wheelSpins: {}
         };
 
+        function requestNotificationPermission() {
+            if (!("Notification" in window)) {
+                alert("Tento prohlížeč nepodporuje desktopové notifikace.");
+                return;
+            }
+            Notification.requestPermission().then(permission => {
+                const btnText = document.getElementById('notif-btn-text');
+                if (permission === "granted") {
+                    btnText.innerText = "Aktivní ✓";
+                    new Notification("Zlaťáky", { body: "Notifikace pro správce byly zapnuty!" });
+                } else {
+                    btnText.innerText = "Zamítnuto";
+                    alert("Notifikace byly v prohlížeči zakázány.");
+                }
+            });
+        }
+
+        // Kompletní střídání všech šesti povinných úkolů obden mezi Elíkem a Tofíkem
         function ensureDailyTasksExist(targetDateStr) {
             const existingForDate = state.tasks.filter(t => t.date === targetDateStr && t.assignedTo !== 'volunteer');
             if (existingForDate.length === 0) {
@@ -372,25 +392,17 @@
                 const diff = dObj - startOfYear;
                 const oneDay = 1000 * 60 * 60 * 24;
                 const dayOfYear = Math.floor(diff / oneDay);
+                
                 const isEvenDay = dayOfYear % 2 === 0;
-
-                const alternatingAssignee = isEvenDay ? 'elik' : 'tofik';
-                const alternatingTaskTitle = isEvenDay ? 'Charlie - záchod, jídlo' : 'Vysát - koupelna, chodba, záchod';
+                const activeChild = isEvenDay ? 'elik' : 'tofik';
 
                 const newDailyTasks = [
-                    { id: Date.now() + Math.random(), title: alternatingTaskTitle, category: 'Péče', reward: 2, assignedTo: alternatingAssignee, status: 'open', date: targetDateStr },
-                    
-                    { id: Date.now() + Math.random(), title: 'Ustlat postel', category: 'Úklid', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
-                    { id: Date.now() + Math.random(), title: 'Uklidit pokoj', category: 'Úklid', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
-                    { id: Date.now() + Math.random(), title: 'Připravit do školy', category: 'Škola', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
-                    { id: Date.now() + Math.random(), title: 'Úkoly do školy', category: 'Škola', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
-                    { id: Date.now() + Math.random(), title: 'Svačina do školy', category: 'Škola', reward: 1, assignedTo: 'elik', status: 'open', date: targetDateStr },
-
-                    { id: Date.now() + Math.random(), title: 'Ustlat postel', category: 'Úklid', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
-                    { id: Date.now() + Math.random(), title: 'Uklidit pokoj', category: 'Úklid', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
-                    { id: Date.now() + Math.random(), title: 'Připravit do školy', category: 'Škola', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
-                    { id: Date.now() + Math.random(), title: 'Úkoly do školy', category: 'Škola', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr },
-                    { id: Date.now() + Math.random(), title: 'Svačina do školy', category: 'Škola', reward: 1, assignedTo: 'tofik', status: 'open', date: targetDateStr }
+                    { id: Date.now() + Math.random(), title: 'Charlie - záchod, jídlo', category: 'Péče', reward: 2, assignedTo: activeChild, status: 'open', date: targetDateStr },
+                    { id: Date.now() + Math.random(), title: 'Ustlat postel', category: 'Úklid', reward: 1, assignedTo: activeChild, status: 'open', date: targetDateStr },
+                    { id: Date.now() + Math.random(), title: 'Uklidit pokoj', category: 'Úklid', reward: 1, assignedTo: activeChild, status: 'open', date: targetDateStr },
+                    { id: Date.now() + Math.random(), title: 'Připravit do školy', category: 'Škola', reward: 1, assignedTo: activeChild, status: 'open', date: targetDateStr },
+                    { id: Date.now() + Math.random(), title: 'Úkoly do školy', category: 'Škola', reward: 1, assignedTo: activeChild, status: 'open', date: targetDateStr },
+                    { id: Date.now() + Math.random(), title: 'Svačina do školy', category: 'Škola', reward: 1, assignedTo: activeChild, status: 'open', date: targetDateStr }
                 ];
                 state.tasks.push(...newDailyTasks);
             }
@@ -436,6 +448,23 @@
                 }
                 
                 ensureDailyTasksExist(todayStr);
+
+                const pendingTasksCount = (state.tasks || []).filter(t => t.status === 'pending').length;
+                const pendingRewardsCount = (state.rewardRequests || []).filter(r => r.status === 'pending').length;
+                const totalPending = pendingTasksCount + pendingRewardsCount;
+
+                if (lastPendingCount !== -1 && totalPending > lastPendingCount) {
+                    if (state.currentRole === 'tatka' || state.currentRole === 'mamka') {
+                        if (Notification.permission === "granted") {
+                            new Notification("Zlaťáky – Nový úkol ke kontrole!", {
+                                body: "Dítě odeslalo úkol ke schválení.",
+                                icon: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/coins.svg"
+                            });
+                        }
+                    }
+                }
+                lastPendingCount = totalPending;
+
                 saveToFirebase();
                 renderApp();
             });
@@ -688,7 +717,7 @@
                 `;
 
                 if (userTasks.length === 0) {
-                    html += `<p class="text-xs text-slate-400 italic py-2">Žádné osobní úkoly pro tento den.</p>`;
+                    html += `<p class="text-xs text-slate-400 italic py-2">Žádné osobní úkoly pro tento den (dnes má povinnosti druhý brácha).</p>`;
                 } else {
                     userTasks.forEach(task => {
                         let statusBadge = '';
@@ -763,11 +792,13 @@
             } else {
                 pendingTasks.forEach(task => {
                     const user = state.users.find(u => u.id === task.assignedTo) || { name: 'Někdo' };
+                    // Zobrazení data úkolu pro přehlednost při schvalování za více dní
+                    const taskDateLabel = task.date ? task.date : 'Neznámé datum';
                     pendingContainer.innerHTML += `
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-amber-50/40 rounded-xl border border-amber-200 gap-3">
                             <div>
                                 <p class="font-bold text-slate-800">${task.title}</p>
-                                <p class="text-xs text-slate-500">Splnil: <span class="font-semibold text-amber-700">${user.name}</span> • Odměna: ${task.reward} zlaťáků</p>
+                                <p class="text-xs text-slate-500">Splnil: <span class="font-semibold text-amber-700">${user.name}</span> • Datum úkolu: <span class="font-semibold text-slate-700">${taskDateLabel}</span> • Odměna: ${task.reward} zlaťáků</p>
                             </div>
                             <div class="flex items-center gap-2 w-full sm:w-auto">
                                 <button onclick="approveTask(${task.id}, 1.0)" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2 rounded-lg font-medium">Schválit</button>
@@ -1088,7 +1119,7 @@
         }
 
         function deleteTransaction(txId) {
-            if (confirm('Opravdu chceš smazat tento záznam z historie? (Pozor: zlaťáky uživateli v bilanci zůstanou, maže se pouze záznam v historii).')) {
+            if (confirm('Opravdu chceš smazat tento záznam z historie?')) {
                 state.transactions = state.transactions.filter(tr => tr.id !== txId);
                 saveToFirebase();
                 renderApp();
@@ -1265,7 +1296,7 @@
 
         function closeManualCoinsModal() {
             state.manualCoinsUserId = null;
-            document.getElementById('manual-coins-modal').classList.remove('flex');
+            document.getElementById('manual-coins-modal').classList.remove('hidden');
             document.getElementById('manual-coins-modal').classList.add('hidden');
         }
 
