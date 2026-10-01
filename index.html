@@ -166,13 +166,15 @@
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 mb-1">Typ úkolu / Předdefinovaný úkol</label>
                         <select id="new-task-preset" onchange="handleTaskPresetChange(this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
-                            <!-- Povinné -->
-                            <option value="Charlie - záchod, jídlo">Charlie - záchod, jídlo (Povinný)</option>
-                            <option value="Ustlat postel">Ustlat postel (Povinný)</option>
-                            <option value="Uklidit pokoj">Uklidit pokoj (Povinný)</option>
-                            <option value="Připravit do školy">Připravit do školy (Povinný)</option>
-                            <option value="Úkoly do školy">Úkoly do školy (Povinný)</option>
-                            <option value="Svačina do školy">Svačina do školy (Povinný)</option>
+                            <!-- Střídající se obden -->
+                            <option value="Charlie - záchod, jídlo">Charlie - záchod, jídlo (Střídající se)</option>
+                            <option value="Vysát - koupelna, chodba, záchod">Vysát - koupelna, chodba, záchod (Střídající se)</option>
+                            <!-- Denní pro oba -->
+                            <option value="Ustlat postel">Ustlat postel (Denní pro oba)</option>
+                            <option value="Uklidit pokoj">Uklidit pokoj (Denní pro oba)</option>
+                            <option value="Připravit do školy">Připravit do školy (Denní pro oba)</option>
+                            <option value="Úkoly do školy">Úkoly do školy (Denní pro oba)</option>
+                            <option value="Svačina do školy">Svačina do školy (Denní pro oba)</option>
                             <!-- Nepovinné / Dobrovolné -->
                             <option value="Vyklidit myčku">Vyklidit myčku (Nepovinný)</option>
                             <option value="Vysát celý byt">Vysát celý byt (Nepovinný)</option>
@@ -426,30 +428,67 @@
             });
         }
 
-        // Kompletní střídání všech šesti povinných úkolů obden mezi Elíkem a Tofíkem
+        // Správné generování úkolů: Denní pro oba kluky + obden střídající se úkoly
         function ensureDailyTasksExist(targetDateStr) {
-            const existingForDate = state.tasks.filter(t => t.date === targetDateStr && t.assignedTo !== 'volunteer');
-            if (existingForDate.length === 0) {
-                const dObj = new Date(targetDateStr);
-                const startOfYear = new Date(dObj.getFullYear(), 0, 0);
-                const diff = dObj - startOfYear;
-                const oneDay = 1000 * 60 * 60 * 24;
-                const dayOfYear = Math.floor(diff / oneDay);
-                
-                const isEvenDay = dayOfYear % 2 === 0;
-                const activeChild = isEvenDay ? 'elik' : 'tofik';
+            const dObj = new Date(targetDateStr);
+            const startOfYear = new Date(dObj.getFullYear(), 0, 0);
+            const diff = dObj - startOfYear;
+            const oneDay = 1000 * 60 * 60 * 24;
+            const dayOfYear = Math.floor(diff / oneDay);
+            
+            const isEvenDay = dayOfYear % 2 === 0;
+            const activeChild = isEvenDay ? 'elik' : 'tofik';
 
-                const newDailyTasks = [
-                    { id: Date.now() + Math.random(), title: 'Charlie - záchod, jídlo', category: 'Domácnost', reward: 2, assignedTo: activeChild, status: 'open', date: targetDateStr },
-                    { id: Date.now() + Math.random(), title: 'Ustlat postel', category: 'Domácnost', reward: 1, assignedTo: activeChild, status: 'open', date: targetDateStr },
-                    { id: Date.now() + Math.random(), title: 'Uklidit pokoj', category: 'Domácnost', reward: 1, assignedTo: activeChild, status: 'open', date: targetDateStr },
-                    { id: Date.now() + Math.random(), title: 'Připravit do školy', category: 'Škola', reward: 1, assignedTo: activeChild, status: 'open', date: targetDateStr },
-                    { id: Date.now() + Math.random(), title: 'Úkoly do školy', category: 'Škola', reward: 1, assignedTo: activeChild, status: 'open', date: targetDateStr },
-                    { id: Date.now() + Math.random(), title: 'Svačina do školy', category: 'Škola', reward: 1, assignedTo: activeChild, status: 'open', date: targetDateStr }
-                ];
-                state.tasks.push(...newDailyTasks);
-            }
+            // 1. Společné denní úkoly pro oba kluky každý den
+            const dailySharedTasks = [
+                { title: 'Ustlat postel', category: 'Domácnost', reward: 1 },
+                { title: 'Uklidit pokoj', category: 'Domácnost', reward: 1 },
+                { title: 'Připravit do školy', category: 'Škola', reward: 1 },
+                { title: 'Úkoly do školy', category: 'Škola', reward: 1 },
+                { title: 'Svačina do školy', category: 'Škola', reward: 1 }
+            ];
 
+            ['elik', 'tofik'].forEach(childId => {
+                dailySharedTasks.forEach(tmpl => {
+                    const exists = state.tasks.some(t => t.date === targetDateStr && t.assignedTo === childId && t.title === tmpl.title);
+                    if (!exists) {
+                        state.tasks.push({
+                            id: Date.now() + Math.random(),
+                            title: tmpl.title,
+                            category: tmpl.category,
+                            reward: tmpl.reward,
+                            assignedTo: childId,
+                            status: 'open',
+                            date: targetDateStr
+                        });
+                    }
+                });
+            });
+
+            // 2. Úkoly střídající se obden pouze mezi oběma kluky
+            const alternatingTasks = [
+                { title: 'Charlie - záchod, jídlo', category: 'Domácnost', reward: 2 },
+                { title: 'Vysát - koupelna, chodba, záchod', category: 'Domácnost', reward: 2 }
+            ];
+
+            alternatingTasks.forEach(tmpl => {
+                const existsForElik = state.tasks.some(t => t.date === targetDateStr && t.assignedTo === 'elik' && t.title === tmpl.title);
+                const existsForTofik = state.tasks.some(t => t.date === targetDateStr && t.assignedTo === 'tofik' && t.title === tmpl.title);
+
+                if (!existsForElik && !existsForTofik) {
+                    state.tasks.push({
+                        id: Date.now() + Math.random(),
+                        title: tmpl.title,
+                        category: tmpl.category,
+                        reward: tmpl.reward,
+                        assignedTo: activeChild,
+                        status: 'open',
+                        date: targetDateStr
+                    });
+                }
+            });
+
+            // 3. Dobrovolné úkoly
             const existingVol = state.tasks.filter(t => t.date === targetDateStr && t.assignedTo === 'volunteer');
             const volTemplates = [
                 { title: 'Vyklidit myčku', reward: 2, allowHalf: true, category: 'Domácnost' },
@@ -760,7 +799,7 @@
                 `;
 
                 if (userTasks.length === 0) {
-                    html += `<p class="text-xs text-slate-400 italic py-2">Žádné osobní úkoly pro tento den (dnes má povinnosti druhý brácha).</p>`;
+                    html += `<p class="text-xs text-slate-400 italic py-2">Žádné úkoly pro tento den.</p>`;
                 } else {
                     userTasks.forEach(task => {
                         let statusBadge = '';
