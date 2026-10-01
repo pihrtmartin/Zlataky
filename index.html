@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rodinný úkolníček</title>
+    <!-- Tailwind CSS pro moderní design -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -14,7 +16,7 @@
 
     <!-- Horní lišta -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
             <div class="flex items-center gap-3">
                 <span class="text-2xl">📋</span>
                 <h1 class="text-xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Rodinný úkolníček</h1>
@@ -23,14 +25,15 @@
             <div class="flex items-center gap-3">
                 <input type="date" id="dateSelector" class="bg-slate-100 border border-slate-200 text-sm rounded-lg px-3 py-1.5 font-medium focus:outline-none focus:ring-2 focus:ring-amber-500">
                 <button onclick="resetToday()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold px-3 py-1.5 rounded-lg transition">Dnes</button>
+                <button onclick="openAdminModal()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg transition shadow-sm">⚙️ Správce</button>
             </div>
         </div>
     </header>
 
     <!-- Hlavní obsah -->
-    <main class="max-w-5xl mx-auto px-4 py-6 flex-grow w-full space-y-8">
+    <main class="max-w-6xl mx-auto px-4 py-6 flex-grow w-full space-y-8">
         
-        <!-- Sekce kluků -->
+        <!-- Sekce dětí (Kluci) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="kidsContainer">
             <!-- Sem se dynamicky vykreslí Elík a Tofík -->
         </div>
@@ -49,45 +52,131 @@
             </div>
         </div>
 
+        <!-- Ostatní členové rodiny (Taťka, Mamka atd.) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">👨‍👩‍👦‍👦</span>
+                    <h2 class="text-lg font-bold text-slate-800">Ostatní členové rodiny</h2>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="adultsContainer">
+                <!-- Sem se vykreslí dospělí -->
+            </div>
+        </div>
+
+        <!-- Žebříček a Historie -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Žebříček -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-xl">🏆</span>
+                    <h2 class="text-lg font-bold text-slate-800">Žebříček zlatáků</h2>
+                </div>
+                <div id="leaderboardContainer" class="space-y-3">
+                    <!-- Tady bude žebříček -->
+                </div>
+            </div>
+
+            <!-- Historie -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-xl">📊</span>
+                    <h2 class="text-lg font-bold text-slate-800">Historie a přehled</h2>
+                </div>
+                <div id="historyContainer" class="text-sm text-slate-600 space-y-2">
+                    <!-- Tady bude historie -->
+                </div>
+            </div>
+        </div>
+
     </main>
 
+    <!-- Modální okno pro správce -->
+    <div id="adminModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="text-lg font-bold text-slate-800">Správa úkolů</h3>
+                <button onclick="closeAdminModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <h4 class="text-sm font-bold text-slate-700 mb-2">Přidat vlastní úkol pro vybraný den</h4>
+                    <form id="adminAddTaskForm" onsubmit="adminAddTask(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">Název úkolu</label>
+                            <input type="text" id="adminTaskTitle" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-slate-500 mb-1">Přiřadit komu</label>
+                                <select id="adminTaskTarget" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                    <option value="elik">Elík</option>
+                                    <option value="tofik">Tofík</option>
+                                    <option value="tatka">Taťka</option>
+                                    <option value="mamka">Mamka</option>
+                                    <option value="volunteer">Dobrovolný</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-500 mb-1">Zlatáky</label>
+                                <input type="number" id="adminTaskReward" value="1" min="1" max="10" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 rounded-lg text-sm transition">Přidat úkol</button>
+                    </form>
+                </div>
+
+                <div class="border-t border-slate-100 pt-4">
+                    <h4 class="text-sm font-bold text-slate-700 mb-2">Správa peněženek / zlatáků</h4>
+                    <div id="adminWalletsList" class="space-y-2">
+                        <!-- Tady se vypíšou peněženky pro úpravu -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Patička -->
-    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400 mt-8">
         Rodinný úkolníček &copy; 2026
     </footer>
 
     <!-- JavaScriptová logika -->
     <script>
-        // Výchozí stav aplikace
         let state = {
             selectedDate: new Date().toISOString().split('T')[0],
             tasks: [],
             wallets: {
                 elik: 0,
-                tofik: 0
-            }
+                tofik: 0,
+                tatka: 0,
+                mamka: 0
+            },
+            adults: [
+                { id: 'tatka', name: 'Taťka', icon: '🧔' },
+                { id: 'mamka', name: 'Mamka', icon: '👩' }
+            ]
         };
 
-        // Načtení dat z localStorage při spuštění
         function loadState() {
-            const saved = localStorage.getItem('family_tasks_state_v2');
+            const saved = localStorage.getItem('family_tasks_state_v3');
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
                     state.tasks = parsed.tasks || [];
-                    state.wallets = parsed.wallets || { elik: 0, tofik: 0 };
+                    state.wallets = parsed.wallets || { elik: 0, tofik: 0, tatka: 0, mamka: 0 };
                 } catch (e) {
                     console.error("Chyba při načítání dat", e);
                 }
             }
         }
 
-        // Uložení dat do localStorage
         function saveState() {
-            localStorage.setItem('family_tasks_state_v2', JSON.stringify(state));
+            localStorage.setItem('family_tasks_state_v3', JSON.stringify(state));
         }
 
-        // Zajištění generování úkolů pro daný den
         function ensureDailyTasksExist(targetDateStr) {
             const dObj = new Date(targetDateStr);
             const startOfYear = new Date(dObj.getFullYear(), 0, 0);
@@ -96,11 +185,10 @@
             const dayOfYear = Math.floor(diff / oneDay);
             
             const isEvenDay = dayOfYear % 2 === 0;
-            // Určení, kdo má mít v tento den Charlieho a kdo Vysávání (musí se lišit)
             let charlieChild = isEvenDay ? 'elik' : 'tofik';
             let vacuumChild = isEvenDay ? 'tofik' : 'elik';
 
-            // 1. Společné denní úkoly pro oba kluky každý den
+            // 1. Denní úkoly pro kluky
             const dailySharedTasks = [
                 { title: 'Ustlat postel', category: 'Domácnost', reward: 1 },
                 { title: 'Uklidit pokoj', category: 'Domácnost', reward: 1 },
@@ -126,7 +214,7 @@
                 });
             });
 
-            // 2. Střídající se úkol: Charlie - záchod, jídlo
+            // 2. Střídající se úkol: Charlie
             const charlieTaskTitle = 'Charlie - záchod, jídlo';
             let charlieTask = state.tasks.find(t => t.date === targetDateStr && t.title === charlieTaskTitle);
             if (!charlieTask) {
@@ -143,7 +231,7 @@
                 charlieTask.assignedTo = charlieChild;
             }
 
-            // 3. Střídající se úkol: Vysát - koupelna, chodba, záchod
+            // 3. Střídající se úkol: Vysávání
             const vacuumTaskTitle = 'Vysát - koupelna, chodba, záchod';
             let vacuumTask = state.tasks.find(t => t.date === targetDateStr && t.title === vacuumTaskTitle);
             if (!vacuumTask) {
@@ -191,43 +279,50 @@
             });
         }
 
-        // Přepnutí stavu úkolu (potvrdit / vrátit)
         function toggleTask(taskId) {
             const task = state.tasks.find(t => t.id === taskId);
             if (!task) return;
 
             if (task.status === 'open') {
                 task.status = 'done';
-                if (task.assignedTo !== 'volunteer') {
-                    state.wallets[task.assignedTo] = (state.wallets[task.assignedTo] || 0) + task.reward;
+                if (state.wallets[task.assignedTo] !== undefined) {
+                    state.wallets[task.assignedTo] += task.reward;
                 }
             } else if (task.status === 'done') {
                 task.status = 'open';
-                if (task.assignedTo !== 'volunteer') {
-                    state.wallets[task.assignedTo] = Math.max(0, (state.wallets[task.assignedTo] || 0) - task.reward);
+                if (state.wallets[task.assignedTo] !== undefined) {
+                    state.wallets[task.assignedTo] = Math.max(0, state.wallets[task.assignedTo] - task.reward);
                 }
             }
             saveState();
             render();
         }
 
-        // Hlavní renderovací funkce
-        function render() {
-            // Zajistit, že pro vybraný den existují úkoly
-            ensureDailyTasksExist(state.selectedDate);
+        function claimVolunteer(taskId, kidId) {
+            const task = state.tasks.find(t => t.id === taskId);
+            if (!task) return;
 
-            // Nastavení data v inputu
+            if (state.wallets[kidId] !== undefined) {
+                state.wallets[kidId] += task.reward;
+            }
+            state.tasks = state.tasks.filter(t => t.id !== taskId);
+            
+            saveState();
+            render();
+        }
+
+        function render() {
+            ensureDailyTasksExist(state.selectedDate);
             document.getElementById('dateSelector').value = state.selectedDate;
 
+            // 1. Vykreslení kluků
             const kidsContainer = document.getElementById('kidsContainer');
             kidsContainer.innerHTML = '';
-
             const kidsData = [
                 { id: 'elik', name: 'Elík', icon: '🏊‍♂️' },
                 { id: 'tofik', name: 'Tofík', icon: '🥞' }
             ];
 
-            // Vykreslení karet kluků
             kidsData.forEach(kid => {
                 const kidTasks = state.tasks.filter(t => t.date === state.selectedDate && t.assignedTo === kid.id);
                 
@@ -244,7 +339,6 @@
                                     <span class="font-bold text-amber-700 text-sm">${state.wallets[kid.id] || 0}</span>
                                 </div>
                             </div>
-                            
                             <div class="space-y-2.5">
                 `;
 
@@ -257,7 +351,7 @@
                             <div class="flex items-center justify-between p-3 rounded-xl border ${isDone ? 'bg-emerald-50/50 border-emerald-200 text-slate-500 line-through' : 'bg-slate-50 border-slate-200 text-slate-700'} transition">
                                 <div class="flex flex-col">
                                     <span class="font-semibold text-sm ${isDone ? 'text-emerald-800' : 'text-slate-800'}">${task.title}</span>
-                                    <span class="text-xs text-slate-400">${task.category} • +${task.reward} zlatáků</span>
+                                    <span class="text-xs text-slate-400">${task.category || 'Úkol'} • +${task.reward} zlatáků</span>
                                 </div>
                                 <button onclick="toggleTask(${task.id})" class="px-3.5 py-1.5 text-xs font-bold rounded-lg transition ${isDone ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-amber-500 text-white hover:bg-amber-600'}">
                                     ${isDone ? 'Hotovo' : 'Potvrdit'}
@@ -266,53 +360,170 @@
                         `;
                     });
                 }
-
                 html += `</div></div></div>`;
                 kidsContainer.innerHTML += html;
             });
 
-            // Vykreslení dobrovolných úkolů
+            // 2. Vykreslení dobrovolných úkolů
             const volContainer = document.getElementById('volunteerContainer');
             volContainer.innerHTML = '';
             const volTasks = state.tasks.filter(t => t.date === state.selectedDate && t.assignedTo === 'volunteer');
 
-            volTasks.forEach(task => {
-                volContainer.innerHTML += `
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col justify-between gap-3">
-                        <div>
-                            <span class="font-semibold text-sm text-slate-800 block">${task.title}</span>
-                            <span class="text-xs text-slate-400">+${task.reward} zlatáků</span>
+            if (volTasks.length === 0) {
+                volContainer.innerHTML = `<p class="text-sm text-slate-400 col-span-full text-center py-2">Žádné volné úkoly.</p>`;
+            } else {
+                volTasks.forEach(task => {
+                    volContainer.innerHTML += `
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex flex-col justify-between gap-3">
+                            <div>
+                                <span class="font-semibold text-sm text-slate-800 block">${task.title}</span>
+                                <span class="text-xs text-slate-400">+${task.reward} zlatáků</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="claimVolunteer(${task.id}, 'elik')" class="flex-1 bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-bold py-1.5 rounded-lg transition border border-sky-200">Elík</button>
+                                <button onclick="claimVolunteer(${task.id}, 'tofik')" class="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold py-1.5 rounded-lg transition border border-amber-200">Tofík</button>
+                            </div>
                         </div>
-                        <div class="flex gap-2">
-                            <button onclick="claimVolunteer(${task.id}, 'elik')" class="flex-1 bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-bold py-1.5 rounded-lg transition border border-sky-200">Elík</button>
-                            <button onclick="claimVolunteer(${task.id}, 'tofik')" class="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold py-1.5 rounded-lg transition border border-amber-200">Tofík</button>
+                    `;
+                });
+            }
+
+            // 3. Vykreslení dospělých
+            const adultsContainer = document.getElementById('adultsContainer');
+            adultsContainer.innerHTML = '';
+            state.adults.forEach(adult => {
+                const adultTasks = state.tasks.filter(t => t.date === state.selectedDate && t.assignedTo === adult.id);
+                let html = `
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xl">${adult.icon}</span>
+                                <h3 class="font-bold text-slate-800 text-sm">${adult.name}</h3>
+                            </div>
+                            <span class="text-xs bg-slate-200/60 text-slate-600 px-2 py-0.5 rounded-full font-semibold">🪙 ${state.wallets[adult.id] || 0}</span>
+                        </div>
+                        <div class="space-y-2">
+                `;
+                if (adultTasks.length === 0) {
+                    html += `<p class="text-xs text-slate-400">Žádné úkoly.</p>`;
+                } else {
+                    adultTasks.forEach(task => {
+                        const isDone = task.status === 'done';
+                        html += `
+                            <div class="flex items-center justify-between text-xs p-2 rounded-lg bg-white border border-slate-100">
+                                <span class="${isDone ? 'line-through text-slate-400' : 'text-slate-700 font-medium'}">${task.title}</span>
+                                <button onclick="toggleTask(${task.id})" class="px-2 py-1 font-semibold rounded ${isDone ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'}">${isDone ? 'Hotovo' : 'Splnit'}</button>
+                            </div>
+                        `;
+                    });
+                }
+                html += `</div></div>`;
+                adultsContainer.innerHTML += html;
+            });
+
+            // 4. Žebříček
+            const lbContainer = document.getElementById('leaderboardContainer');
+            lbContainer.innerHTML = '';
+            const allMembers = [
+                { id: 'elik', name: 'Elík', icon: '🏊‍♂️' },
+                { id: 'tofik', name: 'Tofík', icon: '🥞' },
+                { id: 'tatka', name: 'Taťka', icon: '🧔' },
+                { id: 'mamka', name: 'Mamka', icon: '👩' }
+            ].sort((a, b) => (state.wallets[b.id] || 0) - (state.wallets[a.id] || 0));
+
+            allMembers.forEach((m, index) => {
+                lbContainer.innerHTML += `
+                    <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm">
+                        <div class="flex items-center gap-2.5">
+                            <span class="font-bold text-slate-400 w-4">#${index + 1}</span>
+                            <span>${m.icon}</span>
+                            <span class="font-semibold text-slate-700">${m.name}</span>
+                        </div>
+                        <span class="font-bold text-amber-600">${state.wallets[m.id] || 0} 🪙</span>
+                    </div>
+                `;
+            });
+
+            // 5. Historie / Přehled
+            const histContainer = document.getElementById('historyContainer');
+            let totalDoneAllTime = state.tasks.filter(t => t.status === 'done').length;
+            histContainer.innerHTML = `
+                <p>📅 Vybraný den: <strong>${state.selectedDate}</strong></p>
+                <p>✅ Celkem splněných úkolů tento den: <strong>${totalDoneAllTime}</strong></p>
+                <p class="text-xs text-slate-400 mt-2">Úkoly Charlie a Vysávání se automaticky střídají obden mezi Elíkem a Tofíkem.</p>
+            `;
+
+            // Aktualizace modálního okna správce
+            renderAdminWallets();
+        }
+
+        function renderAdminWallets() {
+            const list = document.getElementById('adminWalletsList');
+            list.innerHTML = '';
+            const members = [
+                { id: 'elik', name: 'Elík' },
+                { id: 'tofik', name: 'Tofík' },
+                { id: 'tatka', name: 'Taťka' },
+                { id: 'mamka', name: 'Mamka' }
+            ];
+            members.forEach(m => {
+                list.innerHTML += `
+                    <div class="flex items-center justify-between text-sm bg-slate-50 p-2 rounded-lg border border-slate-100">
+                        <span>${m.name}</span>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="wallet-${m.id}" value="${state.wallets[m.id] || 0}" class="w-16 bg-white border border-slate-200 rounded px-2 py-1 text-center text-xs">
+                            <button onclick="updateWallet('${m.id}')" class="bg-slate-800 text-white text-xs px-2.5 py-1 rounded">Uložit</button>
                         </div>
                     </div>
                 `;
             });
         }
 
-        // Připsání dobrovolného úkolu vybranému klukovi
-        function claimVolunteer(taskId, kidId) {
-            const task = state.tasks.find(t => t.id === taskId);
-            if (!task) return;
-
-            state.wallets[kidId] = (state.wallets[kidId] || 0) + task.reward;
-            
-            // Po splnění dobrovolný úkol odstraníme z nabídky pro daný den
-            state.tasks = state.tasks.filter(t => t.id !== taskId);
-            
-            saveState();
-            render();
+        function updateWallet(id) {
+            const val = parseInt(document.getElementById(`wallet-${id}`).value);
+            if (!isNaN(val)) {
+                state.wallets[id] = val;
+                saveState();
+                render();
+                alert('Peněženka byla aktualizována.');
+            }
         }
 
-        // Nastavení dnešního data
+        function adminAddTask(e) {
+            e.preventDefault();
+            const title = document.getElementById('adminTaskTitle').value;
+            const target = document.getElementById('adminTaskTarget').value;
+            const reward = parseInt(document.getElementById('adminTaskReward').value) || 1;
+
+            state.tasks.push({
+                id: Date.now() + Math.random(),
+                title: title,
+                category: 'Správce',
+                reward: reward,
+                assignedTo: target,
+                status: target === 'volunteer' ? 'volunteer' : 'open',
+                date: state.selectedDate
+            });
+
+            saveState();
+            render();
+            document.getElementById('adminTaskTitle').value = '';
+            closeAdminModal();
+        }
+
+        function openAdminModal() {
+            document.getElementById('adminModal').classList.remove('hidden');
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminModal').classList.add('hidden');
+        }
+
         function resetToday() {
             state.selectedDate = new Date().toISOString().split('T')[0];
             render();
         }
 
-        // Reakce na změnu data v kalendáři
         document.getElementById('dateSelector').addEventListener('change', (e) => {
             if (e.target.value) {
                 state.selectedDate = e.target.value;
@@ -320,7 +531,7 @@
             }
         });
 
-        // Inicializace při načtení stránky
+        // Inicializace
         loadState();
         render();
     </script>
