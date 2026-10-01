@@ -428,7 +428,7 @@
             });
         }
 
-        // Správné generování úkolů: Denní pro oba kluky + obden střídající se úkoly
+        // Správné generování úkolů: Denní pro oba + nezávislé střídání pro každý střídající se úkol
         function ensureDailyTasksExist(targetDateStr) {
             const dObj = new Date(targetDateStr);
             const startOfYear = new Date(dObj.getFullYear(), 0, 0);
@@ -437,7 +437,10 @@
             const dayOfYear = Math.floor(diff / oneDay);
             
             const isEvenDay = dayOfYear % 2 === 0;
-            const activeChild = isEvenDay ? 'elik' : 'tofik';
+            // Pro Charlieho sudý den Elík, lichý den Tofík
+            const charlieChild = isEvenDay ? 'elik' : 'tofik';
+            // Pro Vysávání obráceně (aby se kluci střídali a neměli všechno najednou)
+            const vacuumChild = isEvenDay ? 'tofik' : 'elik';
 
             // 1. Společné denní úkoly pro oba kluky každý den
             const dailySharedTasks = [
@@ -465,30 +468,37 @@
                 });
             });
 
-            // 2. Úkoly střídající se obden pouze mezi oběma kluky
-            const alternatingTasks = [
-                { title: 'Charlie - záchod, jídlo', category: 'Domácnost', reward: 2 },
-                { title: 'Vysát - koupelna, chodba, záchod', category: 'Domácnost', reward: 2 }
-            ];
+            // 2. Úkol: Charlie - záchod, jídlo (střídá se obden)
+            const charlieTaskTitle = 'Charlie - záchod, jídlo';
+            const charlieExists = state.tasks.some(t => t.date === targetDateStr && t.title === charlieTaskTitle);
+            if (!charlieExists) {
+                state.tasks.push({
+                    id: Date.now() + Math.random(),
+                    title: charlieTaskTitle,
+                    category: 'Domácnost',
+                    reward: 2,
+                    assignedTo: charlieChild,
+                    status: 'open',
+                    date: targetDateStr
+                });
+            }
 
-            alternatingTasks.forEach(tmpl => {
-                const existsForElik = state.tasks.some(t => t.date === targetDateStr && t.assignedTo === 'elik' && t.title === tmpl.title);
-                const existsForTofik = state.tasks.some(t => t.date === targetDateStr && t.assignedTo === 'tofik' && t.title === tmpl.title);
+            // 3. Úkol: Vysát - koupelna, chodba, záchod (střídá se obden)
+            const vacuumTaskTitle = 'Vysát - koupelna, chodba, záchod';
+            const vacuumExists = state.tasks.some(t => t.date === targetDateStr && t.title === vacuumTaskTitle);
+            if (!vacuumExists) {
+                state.tasks.push({
+                    id: Date.now() + Math.random(),
+                    title: vacuumTaskTitle,
+                    category: 'Domácnost',
+                    reward: 2,
+                    assignedTo: vacuumChild,
+                    status: 'open',
+                    date: targetDateStr
+                });
+            }
 
-                if (!existsForElik && !existsForTofik) {
-                    state.tasks.push({
-                        id: Date.now() + Math.random(),
-                        title: tmpl.title,
-                        category: tmpl.category,
-                        reward: tmpl.reward,
-                        assignedTo: activeChild,
-                        status: 'open',
-                        date: targetDateStr
-                    });
-                }
-            });
-
-            // 3. Dobrovolné úkoly
+            // 4. Dobrovolné úkoly
             const existingVol = state.tasks.filter(t => t.date === targetDateStr && t.assignedTo === 'volunteer');
             const volTemplates = [
                 { title: 'Vyklidit myčku', reward: 2, allowHalf: true, category: 'Domácnost' },
